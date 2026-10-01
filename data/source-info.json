@@ -1,1 +1,9 @@
-
+{
+  "generatedAt": null,
+  "runtimeExternalDependencies": [],
+  "maintenanceSources": {
+    "setsAndCards": "TCGdex",
+    "nationalDex": "Pok\u00e9API"
+  },
+  "note": "Run the GitHub Action 'Update local card data' to populate local data."
+}
