@@ -5,6 +5,169 @@ let cards = loadCards();
 
 const $ = id => document.getElementById(id);
 
+const DEX_CACHE_KEY = "kkmPokemonDexCache_v1";
+
+let dexCache = {};
+
+try {
+  dexCache = JSON.parse(localStorage.getItem(DEX_CACHE_KEY)) || {};
+} catch {
+  dexCache = {};
+}
+
+function formatDexNumber(number) {
+  return String(number).padStart(3, "0");
+}
+
+const pokemonNameAliases = {
+  // Gen I oddities
+  "nidoran f": "nidoran-f",
+  "nidoran female": "nidoran-f",
+  "nidoran ♀": "nidoran-f",
+  "nidoran♀": "nidoran-f",
+
+  "nidoran m": "nidoran-m",
+  "nidoran male": "nidoran-m",
+  "nidoran ♂": "nidoran-m",
+  "nidoran♂": "nidoran-m",
+
+  "farfetchd": "farfetchd",
+  "farfetch'd": "farfetchd",
+
+  "mr mime": "mr-mime",
+  "mr. mime": "mr-mime",
+
+  // Later naming oddities
+  "mime jr": "mime-jr",
+  "mime jr.": "mime-jr",
+
+  "mr rime": "mr-rime",
+  "mr. rime": "mr-rime",
+
+  "type null": "type-null",
+  "type: null": "type-null",
+
+  "ho oh": "ho-oh",
+  "ho-oh": "ho-oh",
+
+  "porygon z": "porygon-z",
+  "porygon-z": "porygon-z",
+
+  "jangmo o": "jangmo-o",
+  "jangmo-o": "jangmo-o",
+
+  "hakamo o": "hakamo-o",
+  "hakamo-o": "hakamo-o",
+
+  "kommo o": "kommo-o",
+  "kommo-o": "kommo-o",
+
+  "sirfetchd": "sirfetchd",
+  "sirfetch'd": "sirfetchd",
+
+  "flabebe": "flabebe",
+  "flabébé": "flabebe",
+
+  "wo chien": "wo-chien",
+  "wo-chien": "wo-chien",
+
+  "chien pao": "chien-pao",
+  "chien-pao": "chien-pao",
+
+  "ting lu": "ting-lu",
+  "ting-lu": "ting-lu",
+
+  "chi yu": "chi-yu",
+  "chi-yu": "chi-yu"
+};
+
+const regionalPrefixes = [
+  "alolan ",
+  "galarian ",
+  "hisuian ",
+  "paldean "
+];
+
+function normalizePokemonName(name) {
+  let normalized = name
+    .trim()
+    .toLowerCase()
+    .replace(/[’‘]/g, "'")
+    .replace(/\s+/g, " ");
+
+  // Regional variants share the same National Dex number.
+  for (const prefix of regionalPrefixes) {
+    if (normalized.startsWith(prefix)) {
+      normalized = normalized.slice(prefix.length);
+      break;
+    }
+  }
+
+  if (pokemonNameAliases[normalized]) {
+    return pokemonNameAliases[normalized];
+  }
+
+  return normalized
+    .replace(/[.'’]/g, "")
+    .replace(/[:\s]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+let dexLookupTimer = null;
+
+async function autofillDexNumber() {
+  const enteredName = $("name").value.trim();
+
+  if (!enteredName) {
+    return;
+  }
+
+  const lookupName = normalizePokemonName(enteredName);
+
+  if (!lookupName) {
+    return;
+  }
+
+  // Use our local cache first.
+  if (dexCache[lookupName]) {
+    $("dex").value = formatDexNumber(dexCache[lookupName]);
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `https://pokeapi.co/api/v2/pokemon-species/${encodeURIComponent(lookupName)}`
+    );
+
+    if (!response.ok) {
+      return;
+    }
+
+    const pokemon = await response.json();
+
+    dexCache[lookupName] = pokemon.id;
+
+    localStorage.setItem(
+      DEX_CACHE_KEY,
+      JSON.stringify(dexCache)
+    );
+
+    $("dex").value = formatDexNumber(pokemon.id);
+
+  } catch (error) {
+    console.warn("Could not look up National Dex number:", error);
+  }
+}
+
+$("name").addEventListener("input", () => {
+  clearTimeout(dexLookupTimer);
+
+  dexLookupTimer = setTimeout(() => {
+    autofillDexNumber();
+  }, 350);
+});
+
 const form = $("cardForm");
 const body = $("inventoryBody");
 
@@ -29,7 +192,7 @@ function formData() {
   return {
     id: $("editId").value || newId(),
     name: $("name").value.trim(),
-    dex: $("dex").value ? Number($("dex").value) : null,
+    dex: $("dex").value.trim() || null,
     setName: $("setName").value.trim(),
     cardNumber: $("cardNumber").value.trim(),
     language: $("language").value,
@@ -124,7 +287,9 @@ function filteredCards() {
     if (sort === "recent") return new Date(b.createdAt) - new Date(a.createdAt);
     if (sort === "name") return a.name.localeCompare(b.name);
     if (sort === "set") return (a.setName || "").localeCompare(b.setName || "") || (a.cardNumber || "").localeCompare(b.cardNumber || "");
-    const ad = a.dex ?? 99999, bd = b.dex ?? 99999;
+    const ad = a.dex ? Number(a.dex) : 99999;
+    const bd = b.dex ? Number(b.dex) : 99999;
+    
     return ad - bd || a.name.localeCompare(b.name);
   });
 
