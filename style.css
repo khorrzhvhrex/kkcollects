@@ -370,3 +370,54 @@ td.notes {
     flex-direction: column;
   }
 }
+
+
+/* v2 additions */
+.field-status {
+  min-height: 14px;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.inline-warning {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  background: rgba(185, 92, 118, 0.12);
+  color: #f0c7d2;
+  font-size: 13px;
+}
+
+.check-label {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
+.check-label input {
+  width: auto;
+  margin: 0;
+}
+
+.muted-field {
+  opacity: 0.72;
+}
+
+input[readonly] {
+  background: #21192a;
+  color: var(--text-muted);
+}
+
+.inactive-row td {
+  opacity: 0.58;
+}
+
+.inactive-row:hover td {
+  opacity: 0.78;
+}
