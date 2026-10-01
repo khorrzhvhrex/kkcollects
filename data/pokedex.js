@@ -1,1 +1,1 @@
-
+window.KKM_POKEDEX={};
