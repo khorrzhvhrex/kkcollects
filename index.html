@@ -32,9 +32,16 @@
           </label>
 
           <label>
-            National Dex #
-            <input id="dex" type="number" min="1" placeholder="093" />
-          </label>
+          National Dex #
+          <input
+            id="dex"
+            type="text"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="4"
+            placeholder="093"
+          />
+        </label>
 
           <label>
             Set
