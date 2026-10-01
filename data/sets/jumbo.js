@@ -1,0 +1,1 @@
+window.KKM_SET_DATA=window.KKM_SET_DATA||{};window.KKM_SET_DATA["jumbo"]={"id":"jumbo","name":"Jumbo cards","seriesId":"misc","seriesName":"Miscellaneous","releaseDate":"2000-02-01","officialCount":160,"totalCount":160,"cards":[]};

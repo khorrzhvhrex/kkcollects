@@ -1,0 +1,1 @@
+window.KKM_SET_DATA=window.KKM_SET_DATA||{};window.KKM_SET_DATA["miscp"]={"id":"miscp","name":"Miscellaneous Promos","seriesId":"misc","seriesName":"Miscellaneous","releaseDate":"1996-01-01","officialCount":1,"totalCount":1,"cards":[{"id":"miscp-001","localId":"001","name":"Ancient Mew"}]};

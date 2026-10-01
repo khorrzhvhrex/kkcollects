@@ -1,9 +1,16 @@
 {
-  "generatedAt": null,
+  "generatedAt": "2026-10-01T23:28:08.893709+00:00",
   "runtimeExternalDependencies": [],
   "maintenanceSources": {
     "setsAndCards": "TCGdex",
-    "nationalDex": "Pok\u00e9API"
+    "nationalDex": "PokéAPI"
   },
-  "note": "Run the GitHub Action 'Update local card data' to populate local data."
+  "setCount": 205,
+  "pokedexSpeciesCount": 1025,
+  "notes": [
+    "The live tracker reads only committed repository files.",
+    "officialCount is never treated as a maximum valid card number.",
+    "Secret rares such as Dark Raichu 83/82 are valid.",
+    "Card images are intentionally excluded."
+  ]
 }

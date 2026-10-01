@@ -1,0 +1,1 @@
+window.KKM_SET_DATA=window.KKM_SET_DATA||{};window.KKM_SET_DATA["rc"]={"id":"rc","name":"Radiant Collection","seriesId":"bw","seriesName":"Black & White","releaseDate":"2013-11-06","officialCount":25,"totalCount":25,"cards":[]};
