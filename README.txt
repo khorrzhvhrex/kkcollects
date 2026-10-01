@@ -1,38 +1,88 @@
-KKM LEGACY CARD TRACKER
-=======================
+KKM CARD TRACKER
+================
 
 Purpose
 -------
-A lightweight offline browser app for logging legacy Pokémon cards while physically sorting them.
+A local-first browser app for tracking Pokémon cards while sorting, collecting,
+selling, and eventually supporting KKM business workflows.
 
-Current assumptions
--------------------
-- Legacy cards default to $0.00 basis unless you have supportable acquisition records.
-- One row can represent multiple identical copies using Quantity.
-- Data is stored in your browser's localStorage.
-- Export JSON regularly as your durable backup.
-- CSV export is included for spreadsheets/accounting review.
+Core principles
+---------------
+- Runtime card/set/Pokédex metadata is stored in the GitHub repo.
+- The deployed app does not contact TCGdex, PokéAPI, or another card database.
+- Third-party sources are maintenance inputs only.
+- Card images are intentionally not included yet.
+- Imported set data accelerates entry but never prevents manual entry.
+- Secret rares are valid even when numerator > printed set denominator
+  (for example Dark Raichu 83/82).
+- Zero quantity never deletes a card record. It becomes inactive and is hidden
+  by default.
+- Legacy cards default to $0.00 basis unless supportable acquisition records exist.
 
-How to run
+Card model
 ----------
-1. Extract this folder somewhere permanent.
-2. Double-click index.html.
-3. Start logging.
-4. Export JSON backups regularly.
+Set / Promo group
+Printed card number
+Card name
+National Dex number
+Language
+Size:
+  - Standard
+  - Oversized
+Treatment:
+  - Standard
+  - Holo
+  - Reverse Holo
+  - Cosmos Holo
+  - Other
+Condition
+Quantity
+Basis per card
+Status
+Storage location
+Notes
 
-Future expansion
-----------------
-This is intentionally structured so we can later add:
-- modern set imports
+If Treatment = Other, Notes are required.
+
+Promos
+------
+Use imported promo sets when they exist. Otherwise choose "Manual / Promo Entry"
+and enter the Set / Promo Group, card number, and name manually.
+
+Local data maintenance
+----------------------
+This repo is designed for browser-only GitHub management.
+
+To refresh set/card/Pokédex metadata:
+
+1. Open the repo on GitHub.
+2. Open Actions.
+3. Choose "Update local card data".
+4. Click "Run workflow".
+
+The workflow runs tools/update_local_data.py and commits changed /data files
+back to the repository.
+
+Runtime files
+-------------
+data/pokedex.js
+data/sets-index.js
+data/sets/*.js
+data/source-info.json
+
+Backups
+-------
+Inventory remains in browser localStorage for this phase of the project.
+Export JSON regularly as the durable backup.
+
+Future architecture
+-------------------
 - purchase/rip lots
-- automatic cost allocation
-- per-card lifecycle/history
-- FIFO handling
-- TCGplayer/Etsy status and sales
-- magnet production/orders
+- automatic basis allocation
+- FIFO consumption
+- immutable lifecycle/disposition history
+- TCGplayer/Etsy sales
+- magnet production and custom orders
 - reports / COGS / P&L
 - National Dex collection views
-
-Important
----------
-Browser localStorage belongs to that browser/profile/device. Use Export JSON often.
+- optional card image retrieval
