@@ -3,14 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KKM Legacy Card Tracker</title>
+  <title>KKM Card Tracker</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="data/pokedex.js"></script>
+  <script src="data/sets-index.js"></script>
 </head>
 <body>
   <header>
     <div>
-      <h1>KKM Legacy Card Tracker</h1>
-      <p>Manual intake for pre-tracked cards. Legacy basis defaults to $0.00 unless you know otherwise.</p>
+      <h1>KKM Card Tracker</h1>
+      <p>Local-first Pokémon card inventory and legacy intake.</p>
     </div>
     <div class="header-actions">
       <button id="exportJsonBtn">Export JSON</button>
@@ -27,30 +29,31 @@
 
         <div class="grid">
           <label>
-            Pokémon / Card Name
-            <input id="name" required autocomplete="off" placeholder="e.g. Haunter" />
+            Imported Set
+            <select id="setId">
+              <option value="">Manual / Promo Entry</option>
+            </select>
           </label>
 
-          <label>
-          National Dex #
-          <input
-            id="dex"
-            type="text"
-            inputmode="numeric"
-            pattern="[0-9]*"
-            maxlength="4"
-            placeholder="093"
-          />
-        </label>
-
-          <label>
-            Set
-            <input id="setName" autocomplete="off" placeholder="e.g. Fossil" />
+          <label id="manualSetLabel">
+            Set / Promo Group
+            <input id="setName" autocomplete="off" placeholder="e.g. Fossil, Black Star Promos" />
           </label>
 
           <label>
             Card #
-            <input id="cardNumber" autocomplete="off" placeholder="e.g. 6/62" />
+            <input id="cardNumber" autocomplete="off" placeholder="e.g. 83/82 or SWSH020" />
+            <small id="cardLookupStatus" class="field-status"></small>
+          </label>
+
+          <label>
+            Pokémon / Card Name
+            <input id="name" required autocomplete="off" placeholder="e.g. Dark Raichu" />
+          </label>
+
+          <label>
+            National Dex #
+            <input id="dex" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="026" />
           </label>
 
           <label>
@@ -70,15 +73,20 @@
           </label>
 
           <label>
-            Variant
+            Size
+            <select id="size">
+              <option>Standard</option>
+              <option>Oversized</option>
+            </select>
+          </label>
+
+          <label>
+            Treatment
             <select id="variant">
               <option>Standard</option>
               <option>Holo</option>
               <option>Reverse Holo</option>
-              <option>Promo</option>
-              <option>Stamped</option>
-              <option>Full Art</option>
-              <option>ex / EX / GX / V</option>
+              <option>Cosmos Holo</option>
               <option>Other</option>
             </select>
           </label>
@@ -97,7 +105,8 @@
 
           <label>
             Quantity
-            <input id="quantity" type="number" min="1" value="1" required />
+            <input id="quantity" type="number" min="0" value="1" required />
+            <small class="field-status">0 archives the record instead of deleting it.</small>
           </label>
 
           <label>
@@ -125,8 +134,12 @@
 
           <label class="wide">
             Notes
-            <input id="notes" autocomplete="off" placeholder="French vintage duplicate, rough condition, etc." />
+            <input id="notes" autocomplete="off" placeholder="Required when Treatment = Other; promo/oddity details welcome." />
           </label>
+        </div>
+
+        <div id="otherVariantWarning" class="inline-warning" hidden>
+          “Other” treatment needs a note describing what makes this printing different.
         </div>
 
         <div class="form-actions">
@@ -137,17 +150,17 @@
     </section>
 
     <section class="panel stats">
-      <div><strong id="uniqueCount">0</strong><span>Rows</span></div>
-      <div><strong id="cardCount">0</strong><span>Total Cards</span></div>
+      <div><strong id="uniqueCount">0</strong><span>Active Rows</span></div>
+      <div><strong id="cardCount">0</strong><span>Active Cards</span></div>
       <div><strong id="pcCount">0</strong><span>PC Cards</span></div>
-      <div><strong id="magnetCount">0</strong><span>Magnet Candidates</span></div>
+      <div><strong id="inactiveCount">0</strong><span>Inactive Rows</span></div>
     </section>
 
     <section class="panel">
       <div class="table-toolbar">
         <div>
           <h2>Inventory</h2>
-          <small>Click a row's Edit button to revise it.</small>
+          <small>Zero-quantity records are retained and hidden by default.</small>
         </div>
         <div class="filters">
           <input id="search" placeholder="Search name, set, #, notes..." />
@@ -167,6 +180,10 @@
             <option value="set">Sort: Set</option>
             <option value="recent">Sort: Most Recent</option>
           </select>
+          <label class="check-label">
+            <input id="showInactive" type="checkbox" />
+            Show inactive
+          </label>
         </div>
       </div>
 
@@ -176,10 +193,11 @@
             <tr>
               <th>Dex</th>
               <th>Name</th>
-              <th>Set</th>
+              <th>Set / Promo</th>
               <th>#</th>
               <th>Lang</th>
-              <th>Variant</th>
+              <th>Size</th>
+              <th>Treatment</th>
               <th>Cond.</th>
               <th>Qty</th>
               <th>Basis</th>
@@ -195,7 +213,7 @@
   </main>
 
   <template id="emptyTemplate">
-    <tr><td colspan="12" class="empty">No matching cards logged yet.</td></tr>
+    <tr><td colspan="13" class="empty">No matching cards logged yet.</td></tr>
   </template>
 
   <script src="app.js"></script>
