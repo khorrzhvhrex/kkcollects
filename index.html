@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KKM Legacy Card Tracker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div>
+      <h1>KKM Legacy Card Tracker</h1>
+      <p>Manual intake for pre-tracked cards. Legacy basis defaults to $0.00 unless you know otherwise.</p>
+    </div>
+    <div class="header-actions">
+      <button id="exportJsonBtn">Export JSON</button>
+      <button id="exportCsvBtn">Export CSV</button>
+      <label class="button-like">Import JSON<input id="importJsonInput" type="file" accept=".json" hidden /></label>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel form-panel">
+      <h2>Log Card</h2>
+      <form id="cardForm">
+        <input type="hidden" id="editId" />
+
+        <div class="grid">
+          <label>
+            Pokémon / Card Name
+            <input id="name" required autocomplete="off" placeholder="e.g. Haunter" />
+          </label>
+
+          <label>
+            National Dex #
+            <input id="dex" type="number" min="1" placeholder="093" />
+          </label>
+
+          <label>
+            Set
+            <input id="setName" autocomplete="off" placeholder="e.g. Fossil" />
+          </label>
+
+          <label>
+            Card #
+            <input id="cardNumber" autocomplete="off" placeholder="e.g. 6/62" />
+          </label>
+
+          <label>
+            Language
+            <select id="language">
+              <option>English</option>
+              <option>French</option>
+              <option>Japanese</option>
+              <option>Spanish</option>
+              <option>German</option>
+              <option>Italian</option>
+              <option>Portuguese</option>
+              <option>Korean</option>
+              <option>Chinese</option>
+              <option>Other</option>
+            </select>
+          </label>
+
+          <label>
+            Variant
+            <select id="variant">
+              <option>Standard</option>
+              <option>Holo</option>
+              <option>Reverse Holo</option>
+              <option>Promo</option>
+              <option>Stamped</option>
+              <option>Full Art</option>
+              <option>ex / EX / GX / V</option>
+              <option>Other</option>
+            </select>
+          </label>
+
+          <label>
+            Condition
+            <select id="condition">
+              <option>Unknown</option>
+              <option>NM</option>
+              <option>LP</option>
+              <option>MP</option>
+              <option>HP</option>
+              <option>Damaged</option>
+            </select>
+          </label>
+
+          <label>
+            Quantity
+            <input id="quantity" type="number" min="1" value="1" required />
+          </label>
+
+          <label>
+            Basis / Card
+            <input id="basis" type="number" step="0.01" min="0" value="0.00" />
+          </label>
+
+          <label>
+            Status
+            <select id="status">
+              <option>Legacy Inventory</option>
+              <option>PC</option>
+              <option>Magnet Candidate</option>
+              <option>Toploader Binder</option>
+              <option>Sleeved Bulk</option>
+              <option>General Bulk</option>
+              <option>TCGPlayer Candidate</option>
+            </select>
+          </label>
+
+          <label>
+            Storage Location
+            <input id="storage" autocomplete="off" placeholder="e.g. Bulk Box 1 / Row 2" />
+          </label>
+
+          <label class="wide">
+            Notes
+            <input id="notes" autocomplete="off" placeholder="French vintage duplicate, rough condition, etc." />
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="primary">Add Card</button>
+          <button type="button" id="clearBtn">Clear</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel stats">
+      <div><strong id="uniqueCount">0</strong><span>Rows</span></div>
+      <div><strong id="cardCount">0</strong><span>Total Cards</span></div>
+      <div><strong id="pcCount">0</strong><span>PC Cards</span></div>
+      <div><strong id="magnetCount">0</strong><span>Magnet Candidates</span></div>
+    </section>
+
+    <section class="panel">
+      <div class="table-toolbar">
+        <div>
+          <h2>Inventory</h2>
+          <small>Click a row's Edit button to revise it.</small>
+        </div>
+        <div class="filters">
+          <input id="search" placeholder="Search name, set, #, notes..." />
+          <select id="statusFilter">
+            <option value="">All statuses</option>
+            <option>Legacy Inventory</option>
+            <option>PC</option>
+            <option>Magnet Candidate</option>
+            <option>Toploader Binder</option>
+            <option>Sleeved Bulk</option>
+            <option>General Bulk</option>
+            <option>TCGPlayer Candidate</option>
+          </select>
+          <select id="sortBy">
+            <option value="dex">Sort: Dex #</option>
+            <option value="name">Sort: Name</option>
+            <option value="set">Sort: Set</option>
+            <option value="recent">Sort: Most Recent</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Dex</th>
+              <th>Name</th>
+              <th>Set</th>
+              <th>#</th>
+              <th>Lang</th>
+              <th>Variant</th>
+              <th>Cond.</th>
+              <th>Qty</th>
+              <th>Basis</th>
+              <th>Status</th>
+              <th>Storage</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="inventoryBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <template id="emptyTemplate">
+    <tr><td colspan="12" class="empty">No matching cards logged yet.</td></tr>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
