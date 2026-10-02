@@ -847,7 +847,8 @@ function saveEntryDefaults() {
   const defaults = {
     language: $("language").value,
     status: $("status").value,
-    storage: $("storage").value
+    storage: $("storage").value,
+    basis: $("basis").value
   };
 
   localStorage.setItem(
@@ -872,6 +873,7 @@ function clearForm() {
   const preservedLanguage = $("language").value;
   const preservedStatus = $("status").value;
   const preservedStorage = $("storage").value;
+  const preservedBasis = $("basis").value;
 
   saveEntryDefaults();
 
@@ -879,13 +881,13 @@ function clearForm() {
 
   $("editId").value = "";
   $("quantity").value = 1;
-  $("basis").value = "0.00";
   $("condition").value = "NM";
 
   // Preserve working defaults between card entries.
   $("language").value = preservedLanguage || "English";
   $("status").value = preservedStatus || "Legacy Inventory";
   $("storage").value = preservedStorage || "";
+  $("basis").value = preservedBasis || "0.00";
 
   // Preserve currently selected imported set.
   $("setId").value = preservedSetId || "";
@@ -1013,6 +1015,8 @@ $("basis").addEventListener("blur", () => {
   if (!$("basis").value) {
     $("basis").value = "0.00";
   }
+
+  saveEntryDefaults();
 });
 
 $("setSearch").addEventListener("focus", () => {
@@ -1436,6 +1440,7 @@ const savedDefaults = loadEntryDefaults();
 $("language").value = savedDefaults.language || "English";
 $("status").value = savedDefaults.status || "Legacy Inventory";
 $("storage").value = savedDefaults.storage || "";
+$("basis").value = savedDefaults.basis || "0.00";
 
 if ($("setId").value) {
   selectImportedSet($("setId").value);
