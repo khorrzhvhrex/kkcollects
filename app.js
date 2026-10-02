@@ -29,6 +29,64 @@ function formatDexNumber(number) {
   return digits ? digits.padStart(3, "0") : "";
 }
 
+const pokemonNameAliases = {
+  "nidoran f": "nidoran-f",
+  "nidoran female": "nidoran-f",
+  "nidoran ♀": "nidoran-f",
+  "nidoran♀": "nidoran-f",
+
+  "nidoran m": "nidoran-m",
+  "nidoran male": "nidoran-m",
+  "nidoran ♂": "nidoran-m",
+  "nidoran♂": "nidoran-m",
+
+  "farfetch'd": "farfetchd",
+  "mr. mime": "mr-mime",
+  "mime jr.": "mime-jr",
+  "mr. rime": "mr-rime",
+  "type: null": "type-null",
+  "sirfetch'd": "sirfetchd",
+  "flabébé": "flabebe"
+};
+
+const regionalPrefixes = [
+  "alolan ",
+  "galarian ",
+  "hisuian ",
+  "paldean "
+];
+
+function normalizePokemonName(name) {
+  let normalized = String(name || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[’‘]/g, "'")
+    .replace(/\s+/g, " ");
+
+  for (const prefix of regionalPrefixes) {
+    if (normalized.startsWith(prefix)) {
+      normalized = normalized.slice(prefix.length);
+      break;
+    }
+  }
+
+  normalized = normalized
+    .replace(/\s+(ex|gx|v|vmax|vstar|break)$/i, "")
+    .trim();
+
+  if (pokemonNameAliases[normalized]) {
+    return pokemonNameAliases[normalized];
+  }
+
+  return normalized
+    .replace(/[.'’]/g, "")
+    .replace(/[:\s]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 function normalizeLegacyVariant(value) {
   if (ALL_TREATMENTS.includes(value)) return value;
 
@@ -236,10 +294,20 @@ async function resolveCardFromNumber() {
     $("cardNumber").value = `${card.localId}/${loadedSetData.officialCount}`;
   }
 
-  if (Array.isArray(card.dex) && card.dex.length) {
-    $("dex").value = formatDexNumber(card.dex[0]);
+  const sourceDex =
+    Array.isArray(card.dex) && card.dex.length
+      ? card.dex[0]
+      : card.dex ?? null;
+  
+  if (sourceDex) {
+    $("dex").value = formatDexNumber(sourceDex);
   } else {
-    $("dex").value = "";
+    const lookupName = normalizePokemonName(card.name || "");
+    const fallbackDex = window.KKM_POKEDEX?.[lookupName];
+  
+    $("dex").value = fallbackDex
+      ? formatDexNumber(fallbackDex)
+      : "";
   }
 
   $("cardLookupStatus").textContent = card.name || "Card loaded";
