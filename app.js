@@ -757,15 +757,15 @@ $("setId").addEventListener("change", async () => {
   $("cardNumber").focus();
 });
 
-let cardLookupTimer = null;
+$("cardNumber").addEventListener("blur", () => {
+  resolveCardFromNumber();
+});
 
-$("cardNumber").addEventListener("input", () => {
-  clearTimeout(cardLookupTimer);
-
-  cardLookupTimer = setTimeout(
-    resolveCardFromNumber,
-    180
-  );
+$("cardNumber").addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    resolveCardFromNumber();
+  }
 });
 
 async function editCard(id) {
