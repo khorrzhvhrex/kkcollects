@@ -8,7 +8,7 @@ future KKM sales workflows, and per-card physical printing identification.
 
 Runtime architecture
 --------------------
-The deployed site has ZERO external card-data dependencies.
+The deployed site has zero external card-data dependencies.
 
 The browser reads only files committed in this repository:
 
