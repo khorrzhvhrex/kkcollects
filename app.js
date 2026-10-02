@@ -3,6 +3,7 @@ const PREVIOUS_STORAGE_KEYS = ["kkmCardTracker_v2", "kkmLegacyTracker_v1"];
 
 const $ = id => document.getElementById(id);
 
+const LAST_SET_KEY = "kkmLastSelectedSet_v1";
 const ALL_TREATMENTS = ["Standard", "Holo", "Reverse Holo", "Cosmos Holo", "Other"];
 const ALL_SIZES = ["Standard", "Oversized"];
 
@@ -174,7 +175,17 @@ function populateSetDropdown() {
     select.appendChild(option);
   }
 
-  if ([...select.options].some(option => option.value === current)) {
+  const rememberedSet = localStorage.getItem(LAST_SET_KEY);
+
+  if (
+    rememberedSet &&
+    [...select.options].some(option => option.value === rememberedSet)
+  ) {
+    select.value = rememberedSet;
+  } else if (
+    current &&
+    [...select.options].some(option => option.value === current)
+  ) {
     select.value = current;
   }
 }
@@ -817,11 +828,19 @@ $("dex").addEventListener("blur", () => {
 });
 
 $("setId").addEventListener("change", async () => {
+  const selectedSetId = $("setId").value;
+
+  if (selectedSetId) {
+    localStorage.setItem(LAST_SET_KEY, selectedSetId);
+  } else {
+    localStorage.removeItem(LAST_SET_KEY);
+  }
+
   $("cardNumber").value = "";
   $("name").value = "";
   $("dex").value = "";
 
-  await selectImportedSet($("setId").value);
+  await selectImportedSet(selectedSetId);
   $("cardNumber").focus();
 });
 
@@ -1221,4 +1240,9 @@ $("importJsonInput").addEventListener("change", async event => {
 
 populateSetDropdown();
 resetPrintingControls();
+
+if ($("setId").value) {
+  selectImportedSet($("setId").value);
+}
+
 render();
