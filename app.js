@@ -1451,21 +1451,44 @@ function openColumnVisibility() {
 
   const rect =
     button.getBoundingClientRect();
-
+  
   const popoverWidth = 280;
-
+  const viewportPadding = 12;
+  
   const left = Math.min(
     rect.left,
     window.innerWidth -
       popoverWidth -
-      12
+      viewportPadding
   );
-
+  
   popover.style.left =
-    `${Math.max(12, left)}px`;
-
-  popover.style.top =
-    `${rect.bottom + 6}px`;
+    `${Math.max(viewportPadding, left)}px`;
+  
+  const popoverHeight =
+    popover.offsetHeight;
+  
+  const spaceBelow =
+    window.innerHeight -
+    rect.bottom -
+    viewportPadding;
+  
+  const spaceAbove =
+    rect.top -
+    viewportPadding;
+  
+  if (
+    popoverHeight > spaceBelow &&
+    spaceAbove > spaceBelow
+  ) {
+    popover.style.top = "auto";
+    popover.style.bottom =
+      `${window.innerHeight - rect.top + 6}px`;
+  } else {
+    popover.style.bottom = "auto";
+    popover.style.top =
+      `${rect.bottom + 6}px`;
+  }
 
   $("applyColumnsBtn")
     .addEventListener(
