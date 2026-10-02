@@ -6,6 +6,7 @@ const $ = id => document.getElementById(id);
 const LAST_SET_KEY = "kkmLastSelectedSet_v1";
 const LAST_ENTRY_DEFAULTS_KEY = "kkmLastEntryDefaults_v1";
 const TABLE_STATE_KEY = "kkmInventoryTableState_v1";
+const STATUS_OPTIONS_KEY = "kkmStatusOptions_v1";
 const ALL_TREATMENTS = ["Standard", "Holo", "Reverse Holo", "Cosmos Holo", "Other"];
 const ALL_SIZES = ["Standard", "Oversized"];
 
@@ -153,6 +154,263 @@ function saveCards() {
 
 function newId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function loadStatusOptions() {
+  try {
+    const saved = JSON.parse(
+      localStorage.getItem(STATUS_OPTIONS_KEY)
+    );
+
+    if (
+      Array.isArray(saved) &&
+      saved.length
+    ) {
+      return saved;
+    }
+  } catch {
+    // Fall through to one-time migration.
+  }
+
+  // One-time seed from the statuses already used by this tracker.
+  const initial = [
+    "Legacy Inventory",
+    "PC",
+    "Magnet Candidate",
+    "Toploader Binder",
+    "Sleeved Bulk",
+    "General Bulk",
+    "TCGPlayer Candidate",
+    ...cards.map(card => card.status)
+  ]
+    .map(value => String(value || "").trim())
+    .filter(Boolean);
+
+  const uniqueStatuses =
+    [...new Set(initial)];
+
+  localStorage.setItem(
+    STATUS_OPTIONS_KEY,
+    JSON.stringify(uniqueStatuses)
+  );
+
+  return uniqueStatuses;
+}
+
+function saveStatusOptions(statuses) {
+  const cleaned = [
+    ...new Set(
+      statuses
+        .map(value =>
+          String(value || "").trim()
+        )
+        .filter(Boolean)
+    )
+  ];
+
+  cleaned.sort((a, b) =>
+    a.localeCompare(
+      b,
+      undefined,
+      {
+        sensitivity: "base"
+      }
+    )
+  );
+
+  localStorage.setItem(
+    STATUS_OPTIONS_KEY,
+    JSON.stringify(cleaned)
+  );
+
+  populateStatusOptions();
+
+  return cleaned;
+}
+
+function populateStatusOptions() {
+  const datalist =
+    $("statusOptions");
+
+  if (!datalist) return;
+
+  const statuses =
+    loadStatusOptions();
+
+  datalist.innerHTML = "";
+
+  for (const status of statuses) {
+    const option =
+      document.createElement("option");
+
+    option.value = status;
+
+    datalist.appendChild(option);
+  }
+}
+
+function ensureStatusOption(value) {
+  const status =
+    String(value || "").trim();
+
+  if (!status) return;
+
+  const statuses =
+    loadStatusOptions();
+
+  if (!statuses.includes(status)) {
+    saveStatusOptions([
+      ...statuses,
+      status
+    ]);
+  }
+}
+
+function openStatusManager() {
+  const popover =
+    $("statusManagerPopover");
+
+  const button =
+    $("manageStatusesBtn");
+
+  if (!popover || !button) return;
+
+  const statuses =
+    loadStatusOptions();
+
+  popover.innerHTML = `
+    <div class="column-filter-title">
+      Manage Statuses
+    </div>
+
+    <div class="status-manager-list">
+      ${statuses.map(status => `
+        <div class="status-manager-row">
+          <span>${esc(status)}</span>
+
+          <button
+            type="button"
+            class="status-remove-button"
+            data-status="${esc(status)}"
+          >
+            Remove
+          </button>
+        </div>
+      `).join("")}
+    </div>
+
+    <div class="status-manager-add">
+      <input
+        id="newStatusInput"
+        type="text"
+        autocomplete="off"
+        placeholder="New status..."
+      />
+
+      <button
+        id="addStatusBtn"
+        type="button"
+      >
+        Add
+      </button>
+    </div>
+  `;
+
+  popover.hidden = false;
+
+  const rect =
+    button.getBoundingClientRect();
+
+  const popoverWidth = 300;
+  const pagePadding = 12;
+
+  const pageLeft =
+    rect.left + window.scrollX;
+
+  const pageTop =
+    rect.bottom + window.scrollY + 6;
+
+  const maxLeft =
+    document.documentElement.scrollWidth -
+    popoverWidth -
+    pagePadding;
+
+  popover.style.left =
+    `${Math.max(
+      pagePadding,
+      Math.min(pageLeft, maxLeft)
+    )}px`;
+
+  popover.style.top =
+    `${pageTop}px`;
+
+  $("addStatusBtn").addEventListener(
+    "click",
+    addStatusFromManager
+  );
+
+  $("newStatusInput").addEventListener(
+    "keydown",
+    event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        addStatusFromManager();
+      }
+    }
+  );
+
+  popover
+    .querySelectorAll(
+      ".status-remove-button"
+    )
+    .forEach(button => {
+      button.addEventListener(
+        "click",
+        () => {
+          removeManagedStatus(
+            button.dataset.status
+          );
+        }
+      );
+    });
+}
+
+function addStatusFromManager() {
+  const input =
+    $("newStatusInput");
+
+  const value =
+    input.value.trim();
+
+  if (!value) return;
+
+  ensureStatusOption(value);
+
+  closeStatusManager();
+  openStatusManager();
+}
+
+function removeManagedStatus(status) {
+  const statuses =
+    loadStatusOptions()
+      .filter(value =>
+        value !== status
+      );
+
+  saveStatusOptions(statuses);
+
+  closeStatusManager();
+  openStatusManager();
+}
+
+function closeStatusManager() {
+  const popover =
+    $("statusManagerPopover");
+
+  if (!popover) return;
+
+  popover.hidden = true;
+  popover.innerHTML = "";
 }
 
 function populateSetDropdown() {
@@ -944,6 +1202,10 @@ form.addEventListener("submit", event => {
 
   if (!validateForm()) return;
 
+  ensureStatusOption(
+    $("status").value
+  );
+  
   const card = formData();
   const index = cards.findIndex(existing => existing.id === card.id);
 
@@ -997,7 +1259,27 @@ $("specialPrinting").addEventListener("change", () => {
       : "";
 });
 
-$("status").addEventListener("change", saveEntryDefaults);
+$("status").addEventListener(
+  "change",
+  () => {
+    ensureStatusOption(
+      $("status").value
+    );
+
+    saveEntryDefaults();
+  }
+);
+
+$("status").addEventListener(
+  "blur",
+  () => {
+    ensureStatusOption(
+      $("status").value
+    );
+
+    saveEntryDefaults();
+  }
+);
 $("storage").addEventListener("change", saveEntryDefaults);
 $("storage").addEventListener("blur", saveEntryDefaults);
 $("purchasedFrom").addEventListener("change", saveEntryDefaults);
