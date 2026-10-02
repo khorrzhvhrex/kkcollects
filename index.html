@@ -194,23 +194,18 @@
           <small>Zero-quantity records are retained and hidden by default.</small>
         </div>
         <div class="filters">
-          <input id="search" placeholder="Search name, set, #, printing, notes..." />
-          <select id="statusFilter">
-            <option value="">All statuses</option>
-            <option>Legacy Inventory</option>
-            <option>PC</option>
-            <option>Magnet Candidate</option>
-            <option>Toploader Binder</option>
-            <option>Sleeved Bulk</option>
-            <option>General Bulk</option>
-            <option>TCGPlayer Candidate</option>
-          </select>
-          <select id="sortBy">
-            <option value="dex">Sort: Dex #</option>
-            <option value="name">Sort: Name</option>
-            <option value="set">Sort: Set</option>
-            <option value="recent">Sort: Most Recent</option>
-          </select>
+          <input
+            id="search"
+            placeholder="Search name, set, #, printing, notes..."
+          />
+        
+          <button
+            id="resetFiltersBtn"
+            type="button"
+          >
+            Reset Filters
+          </button>
+        
           <label class="check-label">
             <input id="showInactive" type="checkbox" />
             Show inactive
@@ -222,26 +217,143 @@
         <table>
           <thead>
             <tr>
-              <th>Dex</th>
-              <th>Name</th>
-              <th>Set / Promo</th>
-              <th>#</th>
-              <th>Lang</th>
-              <th>Size</th>
-              <th>Treatment</th>
-              <th>Edition</th>
-              <th>Special</th>
-              <th>Cond.</th>
-              <th>Qty</th>
-              <th>Basis</th>
-              <th>Status</th>
-              <th>Storage</th>
+              <th>
+                <div class="th-controls">
+                  <button type="button" class="sort-header" data-column="dex">
+                    Dex <span class="sort-indicator"></span>
+                  </button>
+                  <button type="button" class="column-filter-button" data-filter="dex" data-label="Dex" title="Filter Dex">⏷</button>
+                </div>
+              </th>
+          
+              <th>
+                <div class="th-controls">
+                  <button type="button" class="sort-header" data-column="name">
+                    Name <span class="sort-indicator"></span>
+                  </button>
+                  <button type="button" class="column-filter-button" data-filter="name" data-label="Name" title="Filter Name">⏷</button>
+                </div>
+              </th>
+          
+              <th>
+                <div class="th-controls">
+                  <button type="button" class="sort-header" data-column="setName">
+                    Set / Promo <span class="sort-indicator"></span>
+                  </button>
+                  <button type="button" class="column-filter-button" data-filter="setName" data-label="Set / Promo" title="Filter Set / Promo">⏷</button>
+                </div>
+              </th>
+          
+              <th>
+                <div class="th-controls">
+                  <button type="button" class="sort-header" data-column="cardNumber">
+                    # <span class="sort-indicator"></span>
+                  </button>
+                  <button type="button" class="column-filter-button" data-filter="cardNumber" data-label="Card #" title="Filter Card #">⏷</button>
+                </div>
+              </th>
+          
+              <th>
+                <div class="th-controls">
+                  <button type="button" class="sort-header" data-column="language">
+                    Lang <span class="sort-indicator"></span>
+                  </button>
+                  <button type="button" class="column-filter-button" data-filter="language" data-label="Language" title="Filter Language">⏷</button>
+                </div>
+              </th>
+          
+              <th>
+                <div class="th-controls">
+                  <button type="button" class="sort-header" data-column="size">
+                    Size <span class="sort-indicator"></span>
+                  </button>
+                  <button type="button" class="column-filter-button" data-filter="size" data-label="Size" title="Filter Size">⏷</button>
+                </div>
+              </th>
+          
+              <th>
+                <div class="th-controls">
+                  <button type="button" class="sort-header" data-column="variant">
+                    Treatment <span class="sort-indicator"></span>
+                  </button>
+                  <button type="button" class="column-filter-button" data-filter="variant" data-label="Treatment" title="Filter Treatment">⏷</button>
+                </div>
+              </th>
+          
+              <th>
+                <div class="th-controls">
+                  <button type="button" class="sort-header" data-column="edition">
+                    Edition <span class="sort-indicator"></span>
+                  </button>
+                  <button type="button" class="column-filter-button" data-filter="edition" data-label="Edition" title="Filter Edition">⏷</button>
+                </div>
+              </th>
+          
+              <th>
+                <div class="th-controls">
+                  <button type="button" class="sort-header" data-column="specialPrintingLabel">
+                    Special <span class="sort-indicator"></span>
+                  </button>
+                  <button type="button" class="column-filter-button" data-filter="specialPrintingLabel" data-label="Special Printing" title="Filter Special Printing">⏷</button>
+                </div>
+              </th>
+          
+              <th>
+                <div class="th-controls">
+                  <button type="button" class="sort-header" data-column="condition">
+                    Cond. <span class="sort-indicator"></span>
+                  </button>
+                  <button type="button" class="column-filter-button" data-filter="condition" data-label="Condition" title="Filter Condition">⏷</button>
+                </div>
+              </th>
+          
+              <th>
+                <div class="th-controls">
+                  <button type="button" class="sort-header" data-column="quantity">
+                    Qty <span class="sort-indicator"></span>
+                  </button>
+                  <button type="button" class="column-filter-button" data-filter="quantity" data-label="Quantity" title="Filter Quantity">⏷</button>
+                </div>
+              </th>
+          
+              <th>
+                <div class="th-controls">
+                  <button type="button" class="sort-header" data-column="basis">
+                    Basis <span class="sort-indicator"></span>
+                  </button>
+                  <button type="button" class="column-filter-button" data-filter="basis" data-label="Basis" title="Filter Basis">⏷</button>
+                </div>
+              </th>
+          
+              <th>
+                <div class="th-controls">
+                  <button type="button" class="sort-header" data-column="status">
+                    Status <span class="sort-indicator"></span>
+                  </button>
+                  <button type="button" class="column-filter-button" data-filter="status" data-label="Status" title="Filter Status">⏷</button>
+                </div>
+              </th>
+          
+              <th>
+                <div class="th-controls">
+                  <button type="button" class="sort-header" data-column="storage">
+                    Storage <span class="sort-indicator"></span>
+                  </button>
+                  <button type="button" class="column-filter-button" data-filter="storage" data-label="Storage" title="Filter Storage">⏷</button>
+                </div>
+              </th>
+          
               <th></th>
             </tr>
           </thead>
           <tbody id="inventoryBody"></tbody>
         </table>
       </div>
+      <div
+        id="columnFilterPopover"
+        class="column-filter-popover"
+        hidden
+      ></div>
     </section>
   </main>
 
