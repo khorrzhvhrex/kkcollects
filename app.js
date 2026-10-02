@@ -4,6 +4,7 @@ const PREVIOUS_STORAGE_KEYS = ["kkmCardTracker_v2", "kkmLegacyTracker_v1"];
 const $ = id => document.getElementById(id);
 
 const LAST_SET_KEY = "kkmLastSelectedSet_v1";
+const LAST_ENTRY_DEFAULTS_KEY = "kkmLastEntryDefaults_v1";
 const ALL_TREATMENTS = ["Standard", "Holo", "Reverse Holo", "Cosmos Holo", "Other"];
 const ALL_SIZES = ["Standard", "Oversized"];
 
@@ -735,25 +736,66 @@ function formData() {
   };
 }
 
+function saveEntryDefaults() {
+  const defaults = {
+    language: $("language").value,
+    status: $("status").value,
+    storage: $("storage").value
+  };
+
+  localStorage.setItem(
+    LAST_ENTRY_DEFAULTS_KEY,
+    JSON.stringify(defaults)
+  );
+}
+
+function loadEntryDefaults() {
+  try {
+    return JSON.parse(
+      localStorage.getItem(LAST_ENTRY_DEFAULTS_KEY)
+    ) || {};
+  } catch {
+    return {};
+  }
+}
+
 function clearForm() {
+  const preservedSetId = $("setId").value;
+  const preservedSetName = $("setName").value;
+  const preservedLanguage = $("language").value;
+  const preservedStatus = $("status").value;
+  const preservedStorage = $("storage").value;
+
+  saveEntryDefaults();
+
   form.reset();
 
   $("editId").value = "";
   $("quantity").value = 1;
   $("basis").value = "0.00";
-  $("language").value = "English";
   $("condition").value = "NM";
-  $("status").value = "Legacy Inventory";
 
-  $("setId").value = "";
-  $("setName").readOnly = false;
-  $("manualSetLabel").classList.remove("muted-field");
+  // Preserve working defaults between card entries.
+  $("language").value = preservedLanguage || "English";
+  $("status").value = preservedStatus || "Legacy Inventory";
+  $("storage").value = preservedStorage || "";
+
+  // Preserve currently selected imported set.
+  $("setId").value = preservedSetId || "";
+
+  if (preservedSetId) {
+    $("setName").value = preservedSetName;
+    $("setName").readOnly = true;
+    $("manualSetLabel").classList.add("muted-field");
+  } else {
+    $("setName").value = "";
+    $("setName").readOnly = false;
+    $("manualSetLabel").classList.remove("muted-field");
+  }
 
   $("cardLookupStatus").textContent = "";
   $("otherVariantWarning").hidden = true;
 
-  loadedSetId = null;
-  loadedSetData = null;
   resolvedSourceCard = null;
 
   resetPrintingControls();
@@ -812,7 +854,13 @@ $("specialPrinting").addEventListener("change", () => {
       : "";
 });
 
+$("status").addEventListener("change", saveEntryDefaults);
+$("storage").addEventListener("change", saveEntryDefaults);
+$("storage").addEventListener("blur", saveEntryDefaults);
+
 $("language").addEventListener("change", () => {
+  saveEntryDefaults();
+
   if (resolvedSourceCard) {
     applySourcePrintingControls({
       variant: $("variant").value,
@@ -1265,6 +1313,12 @@ $("importJsonInput").addEventListener("change", async event => {
 
 populateSetDropdown();
 resetPrintingControls();
+
+const savedDefaults = loadEntryDefaults();
+
+$("language").value = savedDefaults.language || "English";
+$("status").value = savedDefaults.status || "Legacy Inventory";
+$("storage").value = savedDefaults.storage || "";
 
 if ($("setId").value) {
   selectImportedSet($("setId").value);
