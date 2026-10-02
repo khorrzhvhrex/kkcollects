@@ -899,8 +899,6 @@ $("basis").addEventListener("blur", () => {
 });
 
 $("setId").addEventListener("change", async () => {
-
-$("setId").addEventListener("change", async () => {
   const selectedSetId = $("setId").value;
 
   if (selectedSetId) {
