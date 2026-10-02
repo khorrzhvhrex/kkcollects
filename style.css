@@ -245,6 +245,7 @@ select option {
   flex-wrap: wrap;
   align-items: center;
   flex: 1;
+  justify-content: flex-start;
 }
 
 .filters input {
@@ -435,11 +436,14 @@ td.notes {
   gap: 7px;
   padding: 0 4px;
   white-space: nowrap;
+  width: auto;
+  flex: 0 0 auto;
 }
 
 .check-label input {
   width: auto;
   margin: 0;
+  flex: 0 0 auto;
 }
 
 .muted-field {
