@@ -30,7 +30,16 @@
         <div class="grid">
           <label>
             Imported Set
-            <select id="setId">
+            <input
+              id="setSearch"
+              list="setOptions"
+              autocomplete="off"
+              placeholder="Type set name..."
+            />
+          
+            <datalist id="setOptions"></datalist>
+          
+            <select id="setId" hidden aria-hidden="true" tabindex="-1">
               <option value="">Manual / Promo Entry</option>
             </select>
           </label>
