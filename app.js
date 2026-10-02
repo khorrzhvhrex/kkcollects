@@ -827,6 +827,31 @@ $("dex").addEventListener("blur", () => {
   $("dex").value = formatDexNumber($("dex").value);
 });
 
+$("basis").addEventListener("focus", () => {
+  if ($("basis").value === "0.00") {
+    $("basis").value = "";
+  }
+});
+
+$("basis").addEventListener("input", () => {
+  const digits = $("basis").value.replace(/\D/g, "");
+
+  if (!digits) {
+    $("basis").value = "";
+    return;
+  }
+
+  $("basis").value = (Number(digits) / 100).toFixed(2);
+});
+
+$("basis").addEventListener("blur", () => {
+  if (!$("basis").value) {
+    $("basis").value = "0.00";
+  }
+});
+
+$("setId").addEventListener("change", async () => {
+
 $("setId").addEventListener("change", async () => {
   const selectedSetId = $("setId").value;
 
