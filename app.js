@@ -2676,13 +2676,21 @@ function compareCardNumbers(a, b) {
 }
 
 function marketSearchQuery(card) {
+  const treatment =
+    normalizeLegacyVariant(
+      card.variant
+    );
+
   const parts = [
     card.name,
     card.setName,
     card.cardNumber,
-    normalizeLegacyVariant(
-      card.variant
+    (
+      treatment === "Standard" ||
+      treatment === "Other"
     )
+      ? ""
+      : treatment
   ]
     .map(value =>
       String(value || "").trim()
