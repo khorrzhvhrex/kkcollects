@@ -5,6 +5,7 @@ const $ = id => document.getElementById(id);
 
 const LAST_SET_KEY = "kkmLastSelectedSet_v1";
 const LAST_ENTRY_DEFAULTS_KEY = "kkmLastEntryDefaults_v1";
+const TABLE_STATE_KEY = "kkmInventoryTableState_v1";
 const ALL_TREATMENTS = ["Standard", "Holo", "Reverse Holo", "Cosmos Holo", "Other"];
 const ALL_SIZES = ["Standard", "Oversized"];
 
@@ -25,6 +26,8 @@ let cards = loadCards();
 let loadedSetId = null;
 let loadedSetData = null;
 let resolvedSourceCard = null;
+let tableState = loadTableState();
+let activeFilterColumn = null;
 
 function formatDexNumber(number) {
   const digits = String(number ?? "").replace(/\D/g, "");
@@ -945,9 +948,11 @@ form.addEventListener("submit", event => {
 
 $("clearBtn").addEventListener("click", clearForm);
 $("search").addEventListener("input", render);
-$("statusFilter").addEventListener("change", render);
-$("sortBy").addEventListener("change", render);
 $("showInactive").addEventListener("change", render);
+$("resetFiltersBtn").addEventListener(
+  "click",
+  resetInventoryFilters
+);
 
 $("variant").addEventListener("change", () => {
   $("otherVariantWarning").hidden = $("variant").value !== "Other";
@@ -1149,15 +1154,618 @@ window.editCard = editCard;
 window.zeroOutCard = zeroOutCard;
 window.restoreCard = restoreCard;
 
+function loadTableState() {
+  const fallback = {
+    sortKey: "dex",
+    sortDir: "asc",
+    filters: {}
+  };
+
+  try {
+    const saved = JSON.parse(
+      localStorage.getItem(TABLE_STATE_KEY)
+    );
+
+    return {
+      sortKey: saved?.sortKey || fallback.sortKey,
+      sortDir:
+        saved?.sortDir === "desc"
+          ? "desc"
+          : "asc",
+      filters:
+        saved?.filters &&
+        typeof saved.filters === "object"
+          ? saved.filters
+          : {}
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function saveTableState() {
+  localStorage.setItem(
+    TABLE_STATE_KEY,
+    JSON.stringify(tableState)
+  );
+}
+
+const TABLE_COLUMNS = {
+  dex: {
+    get: card => card.dex ?? "",
+    filterType: "text"
+  },
+
+  name: {
+    get: card => card.name ?? "",
+    filterType: "text"
+  },
+
+  setName: {
+    get: card => card.setName ?? "",
+    filterType: "select"
+  },
+
+  cardNumber: {
+    get: card => card.cardNumber ?? "",
+    filterType: "text"
+  },
+
+  language: {
+    get: card => card.language ?? "",
+    filterType: "select"
+  },
+
+  size: {
+    get: card => card.size || "Standard",
+    filterType: "select"
+  },
+
+  variant: {
+    get: card =>
+      normalizeLegacyVariant(card.variant),
+    filterType: "select"
+  },
+
+  edition: {
+    get: card =>
+      card.edition || "Unlimited",
+    filterType: "select"
+  },
+
+  specialPrintingLabel: {
+    get: card =>
+      card.specialPrintingLabel ?? "",
+    filterType: "text"
+  },
+
+  condition: {
+    get: card => card.condition ?? "",
+    filterType: "select"
+  },
+
+  quantity: {
+    get: card =>
+      Number(card.quantity || 0),
+    filterType: "text"
+  },
+
+  basis: {
+    get: card =>
+      Number(card.basis || 0).toFixed(2),
+    filterType: "text"
+  },
+
+  status: {
+    get: card => card.status ?? "",
+    filterType: "select"
+  },
+
+  storage: {
+    get: card => card.storage ?? "",
+    filterType: "select"
+  }
+};
+
+function sortInventoryBy(columnKey) {
+  if (!TABLE_COLUMNS[columnKey]) return;
+
+  if (tableState.sortKey === columnKey) {
+    tableState.sortDir =
+      tableState.sortDir === "asc"
+        ? "desc"
+        : "asc";
+  } else {
+    tableState.sortKey = columnKey;
+    tableState.sortDir = "asc";
+  }
+
+  saveTableState();
+  render();
+}
+
+function compareInventoryValues(
+  a,
+  b,
+  columnKey
+) {
+  if (columnKey === "dex") {
+    const first =
+      a.dex ? Number(a.dex) : 99999;
+
+    const second =
+      b.dex ? Number(b.dex) : 99999;
+
+    return (
+      first - second ||
+      (a.name || "").localeCompare(
+        b.name || ""
+      )
+    );
+  }
+
+  if (columnKey === "cardNumber") {
+    return compareCardNumbers(
+      a.cardNumber,
+      b.cardNumber
+    );
+  }
+
+  if (
+    columnKey === "quantity" ||
+    columnKey === "basis"
+  ) {
+    return (
+      Number(TABLE_COLUMNS[columnKey].get(a)) -
+      Number(TABLE_COLUMNS[columnKey].get(b))
+    );
+  }
+
+  if (columnKey === "condition") {
+    const order = [
+      "NM",
+      "LP",
+      "MP",
+      "HP",
+      "Damaged",
+      "Unknown"
+    ];
+
+    const first =
+      order.indexOf(a.condition);
+
+    const second =
+      order.indexOf(b.condition);
+
+    return (
+      (first < 0 ? 999 : first) -
+      (second < 0 ? 999 : second)
+    );
+  }
+
+  return String(
+    TABLE_COLUMNS[columnKey].get(a)
+  ).localeCompare(
+    String(TABLE_COLUMNS[columnKey].get(b)),
+    undefined,
+    {
+      numeric: true,
+      sensitivity: "base"
+    }
+  );
+}
+
+function cardMatchesColumnFilter(
+  card,
+  columnKey,
+  filterValue
+) {
+  if (!filterValue) return true;
+
+  const column =
+    TABLE_COLUMNS[columnKey];
+
+  if (!column) return true;
+
+  const value = String(
+    column.get(card) ?? ""
+  );
+
+  if (column.filterType === "select") {
+    return value === filterValue;
+  }
+
+  return value
+    .toLowerCase()
+    .includes(
+      String(filterValue).toLowerCase()
+    );
+}
+
+function getColumnFilterOptions(columnKey) {
+  const column =
+    TABLE_COLUMNS[columnKey];
+
+  if (!column) return [];
+
+  return [...new Set(
+    cards
+      .map(card =>
+        String(
+          column.get(card) ?? ""
+        ).trim()
+      )
+      .filter(Boolean)
+  )].sort((a, b) =>
+    a.localeCompare(
+      b,
+      undefined,
+      {
+        numeric: true,
+        sensitivity: "base"
+      }
+    )
+  );
+}
+
+function openColumnFilter(
+  columnKey,
+  button
+) {
+  const column =
+    TABLE_COLUMNS[columnKey];
+
+  if (!column) return;
+
+  activeFilterColumn = columnKey;
+
+  const popover =
+    $("columnFilterPopover");
+
+  const currentValue =
+    tableState.filters[columnKey] || "";
+
+  if (column.filterType === "select") {
+    const options =
+      getColumnFilterOptions(columnKey);
+
+    popover.innerHTML = `
+      <div class="column-filter-title">
+        Filter ${esc(
+          button.dataset.label ||
+          columnKey
+        )}
+      </div>
+
+      <select id="columnFilterInput">
+        <option value="">All</option>
+
+        ${options.map(value => `
+          <option
+            value="${esc(value)}"
+            ${
+              value === currentValue
+                ? "selected"
+                : ""
+            }
+          >
+            ${esc(value)}
+          </option>
+        `).join("")}
+      </select>
+
+      <div class="column-filter-actions">
+        <button
+          type="button"
+          id="applyColumnFilterBtn"
+        >
+          Apply
+        </button>
+
+        <button
+          type="button"
+          id="clearColumnFilterBtn"
+        >
+          Clear
+        </button>
+      </div>
+    `;
+  } else {
+    popover.innerHTML = `
+      <div class="column-filter-title">
+        Filter ${esc(
+          button.dataset.label ||
+          columnKey
+        )}
+      </div>
+
+      <input
+        id="columnFilterInput"
+        type="text"
+        autocomplete="off"
+        placeholder="Contains..."
+        value="${esc(currentValue)}"
+      />
+
+      <div class="column-filter-actions">
+        <button
+          type="button"
+          id="applyColumnFilterBtn"
+        >
+          Apply
+        </button>
+
+        <button
+          type="button"
+          id="clearColumnFilterBtn"
+        >
+          Clear
+        </button>
+      </div>
+    `;
+  }
+
+  popover.hidden = false;
+
+  const rect =
+    button.getBoundingClientRect();
+
+  const popoverWidth = 260;
+
+  const left = Math.min(
+    rect.left,
+    window.innerWidth -
+      popoverWidth -
+      12
+  );
+
+  popover.style.left =
+    `${Math.max(12, left)}px`;
+
+  popover.style.top =
+    `${rect.bottom + 6}px`;
+
+  $("applyColumnFilterBtn")
+    .addEventListener(
+      "click",
+      applyActiveColumnFilter
+    );
+
+  $("clearColumnFilterBtn")
+    .addEventListener(
+      "click",
+      clearActiveColumnFilter
+    );
+
+  const input =
+    $("columnFilterInput");
+
+  input.focus();
+
+  input.addEventListener(
+    "keydown",
+    event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        applyActiveColumnFilter();
+      }
+
+      if (event.key === "Escape") {
+        closeColumnFilter();
+      }
+    }
+  );
+}
+
+function applyActiveColumnFilter() {
+  if (!activeFilterColumn) return;
+
+  const value =
+    $("columnFilterInput")
+      .value
+      .trim();
+
+  if (value) {
+    tableState.filters[
+      activeFilterColumn
+    ] = value;
+  } else {
+    delete tableState.filters[
+      activeFilterColumn
+    ];
+  }
+
+  saveTableState();
+  closeColumnFilter();
+  render();
+}
+
+function clearActiveColumnFilter() {
+  if (!activeFilterColumn) return;
+
+  delete tableState.filters[
+    activeFilterColumn
+  ];
+
+  saveTableState();
+  closeColumnFilter();
+  render();
+}
+
+function closeColumnFilter() {
+  const popover =
+    $("columnFilterPopover");
+
+  popover.hidden = true;
+  popover.innerHTML = "";
+
+  activeFilterColumn = null;
+}
+
+function resetInventoryFilters() {
+  tableState = {
+    sortKey: "dex",
+    sortDir: "asc",
+    filters: {}
+  };
+
+  saveTableState();
+  closeColumnFilter();
+  render();
+}
+
+function initializeInventoryHeaders() {
+  document
+    .querySelectorAll(".sort-header")
+    .forEach(button => {
+      button.addEventListener(
+        "click",
+        () => {
+          sortInventoryBy(
+            button.dataset.column
+          );
+        }
+      );
+    });
+
+  document
+    .querySelectorAll(
+      ".column-filter-button"
+    )
+    .forEach(button => {
+      button.addEventListener(
+        "click",
+        event => {
+          event.stopPropagation();
+
+          openColumnFilter(
+            button.dataset.filter,
+            button
+          );
+        }
+      );
+    });
+
+  document.addEventListener(
+    "click",
+    event => {
+      const popover =
+        $("columnFilterPopover");
+
+      if (
+        popover.hidden ||
+        popover.contains(event.target) ||
+        event.target.closest(
+          ".column-filter-button"
+        )
+      ) {
+        return;
+      }
+
+      closeColumnFilter();
+    }
+  );
+
+  window.addEventListener(
+    "resize",
+    closeColumnFilter
+  );
+}
+
+function updateInventoryHeaderState() {
+  document
+    .querySelectorAll(".sort-header")
+    .forEach(button => {
+      const active =
+        button.dataset.column ===
+        tableState.sortKey;
+
+      const indicator =
+        button.querySelector(
+          ".sort-indicator"
+        );
+
+      button.classList.toggle(
+        "active",
+        active
+      );
+
+      if (indicator) {
+        indicator.textContent =
+          active
+            ? (
+                tableState.sortDir === "asc"
+                  ? "▲"
+                  : "▼"
+              )
+            : "";
+      }
+    });
+
+  document
+    .querySelectorAll(
+      ".column-filter-button"
+    )
+    .forEach(button => {
+      const active = Boolean(
+        tableState.filters[
+          button.dataset.filter
+        ]
+      );
+
+      button.classList.toggle(
+        "active",
+        active
+      );
+    });
+
+  const filterCount =
+    Object.keys(
+      tableState.filters
+    ).length;
+
+  $("resetFiltersBtn").textContent =
+    filterCount
+      ? `Reset Filters (${filterCount})`
+      : "Reset Filters";
+}
+
 function filteredCards() {
-  const query = $("search").value.trim().toLowerCase();
-  const status = $("statusFilter").value;
-  const sort = $("sortBy").value;
-  const showInactive = $("showInactive").checked;
+  const query =
+    $("search")
+      .value
+      .trim()
+      .toLowerCase();
+
+  const showInactive =
+    $("showInactive").checked;
 
   let list = cards.filter(card => {
-    if (!showInactive && Number(card.quantity || 0) === 0) return false;
-    if (status && card.status !== status) return false;
+    if (
+      !showInactive &&
+      Number(card.quantity || 0) === 0
+    ) {
+      return false;
+    }
+
+    for (
+      const [
+        columnKey,
+        filterValue
+      ] of Object.entries(
+        tableState.filters
+      )
+    ) {
+      if (
+        !cardMatchesColumnFilter(
+          card,
+          columnKey,
+          filterValue
+        )
+      ) {
+        return false;
+      }
+    }
 
     if (!query) return true;
 
@@ -1179,30 +1787,23 @@ function filteredCards() {
       card.notes,
       card.dex
     ].some(value =>
-      String(value ?? "").toLowerCase().includes(query)
+      String(value ?? "")
+        .toLowerCase()
+        .includes(query)
     );
   });
 
   list.sort((a, b) => {
-    if (sort === "recent") {
-      return new Date(b.updatedAt || b.createdAt) -
-        new Date(a.updatedAt || a.createdAt);
-    }
+    const result =
+      compareInventoryValues(
+        a,
+        b,
+        tableState.sortKey
+      );
 
-    if (sort === "name") {
-      return (a.name || "").localeCompare(b.name || "");
-    }
-
-    if (sort === "set") {
-      return (a.setName || "").localeCompare(b.setName || "") ||
-        compareCardNumbers(a.cardNumber, b.cardNumber);
-    }
-
-    const aDex = a.dex ? Number(a.dex) : 99999;
-    const bDex = b.dex ? Number(b.dex) : 99999;
-
-    return aDex - bDex ||
-      (a.name || "").localeCompare(b.name || "");
+    return tableState.sortDir === "desc"
+      ? -result
+      : result;
   });
 
   return list;
@@ -1244,6 +1845,8 @@ function esc(value) {
 
 function render() {
   const list = filteredCards();
+
+  updateInventoryHeaderState();
 
   body.innerHTML = "";
 
@@ -1434,6 +2037,7 @@ $("importJsonInput").addEventListener("change", async event => {
 
 populateSetDropdown();
 resetPrintingControls();
+initializeInventoryHeaders();
 
 const savedDefaults = loadEntryDefaults();
 
