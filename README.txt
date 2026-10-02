@@ -1,88 +1,113 @@
-KKM CARD TRACKER
-================
+KKM CARD TRACKER — v0.3
+=======================
 
 Purpose
 -------
-A local-first browser app for tracking Pokémon cards while sorting, collecting,
-selling, and eventually supporting KKM business workflows.
+A local-first Pokémon card inventory tracker built for collection management,
+future KKM sales workflows, and per-card physical printing identification.
 
-Core principles
----------------
-- Runtime card/set/Pokédex metadata is stored in the GitHub repo.
-- The deployed app does not contact TCGdex, PokéAPI, or another card database.
-- Third-party sources are maintenance inputs only.
-- Card images are intentionally not included yet.
-- Imported set data accelerates entry but never prevents manual entry.
-- Secret rares are valid even when numerator > printed set denominator
-  (for example Dark Raichu 83/82).
-- Zero quantity never deletes a card record. It becomes inactive and is hidden
-  by default.
-- Legacy cards default to $0.00 basis unless supportable acquisition records exist.
+Runtime architecture
+--------------------
+The deployed site has ZERO external card-data dependencies.
 
-Card model
-----------
-Set / Promo group
-Printed card number
-Card name
-National Dex number
-Language
-Size:
-  - Standard
-  - Oversized
-Treatment:
+The browser reads only files committed in this repository:
+
+- data/sets-index.js
+- data/sets/*.js
+- data/pokedex.js
+- data/source-info.json
+
+Card images are intentionally excluded for now.
+
+Updating local card data
+------------------------
+The repository is designed to be maintained entirely through GitHub's browser UI.
+
+1. Open the repository.
+2. Click Actions.
+3. Open "Update local card data".
+4. Click "Run workflow".
+5. The Action clones the current open TCGdex cards database, builds a compact
+   normalized snapshot, and commits changed /data files back into this repo.
+
+The live application never contacts TCGdex.
+
+Physical printing model
+-----------------------
+The source importer preserves useful physical-card distinctions when available:
+
+- treatment:
   - Standard
   - Holo
   - Reverse Holo
   - Cosmos Holo
   - Other
-Condition
-Quantity
-Basis per card
-Status
-Storage location
-Notes
 
-If Treatment = Other, Notes are required.
+- size:
+  - Standard
+  - Oversized
+
+- edition:
+  - Unlimited
+  - 1st Edition
+
+- special physical printing metadata:
+  - foil family
+  - subtype (Shadowless, copyright variants, errors, etc.)
+  - stamps / markings
+  - language restrictions
+  - source variant type (including metal / lenticular)
+  - TCGplayer variant ID when supplied upstream
+
+The app presents only the relevant options for a selected card whenever the
+source data is precise enough. "Other" remains available as a manual escape hatch
+and requires Notes.
+
+Secret rares
+------------
+Printed set count is never treated as a card-number ceiling.
+
+Example:
+Dark Raichu 83/82 is valid.
 
 Promos
 ------
-Use imported promo sets when they exist. Otherwise choose "Manual / Promo Entry"
-and enter the Set / Promo Group, card number, and name manually.
+Imported promo sets are treated as normal checklist sets when present.
+Manual / Promo Entry remains available for missing, unnumbered, unusual, or
+incorrect source records.
 
-Local data maintenance
-----------------------
-This repo is designed for browser-only GitHub management.
+Inventory history
+-----------------
+A quantity of 0 does NOT delete an inventory record.
 
-To refresh set/card/Pokédex metadata:
+Zero-quantity records:
+- remain stored
+- are hidden from normal inventory
+- appear when "Show inactive" is enabled
+- can be restored later
 
-1. Open the repo on GitHub.
-2. Open Actions.
-3. Choose "Update local card data".
-4. Click "Run workflow".
+The tracker no longer uses destructive deletion for ordinary inventory movement.
 
-The workflow runs tools/update_local_data.py and commits changed /data files
-back to the repository.
-
-Runtime files
+Local storage
 -------------
-data/pokedex.js
-data/sets-index.js
-data/sets/*.js
-data/source-info.json
-
-Backups
--------
-Inventory remains in browser localStorage for this phase of the project.
+Inventory is still stored in browser localStorage at this stage.
 Export JSON regularly as the durable backup.
 
-Future architecture
--------------------
-- purchase/rip lots
-- automatic basis allocation
-- FIFO consumption
-- immutable lifecycle/disposition history
-- TCGplayer/Etsy sales
-- magnet production and custom orders
-- reports / COGS / P&L
-- National Dex collection views
-- optional card image retrieval
+Storage key:
+kkmCardTracker_v3
+
+The app automatically migrates:
+- kkmCardTracker_v2
+- kkmLegacyTracker_v1
+
+Future work
+-----------
+- purchase / rip lots
+- per-card acquisition basis
+- FIFO / specific identification workflows
+- disposition event history
+- TCGplayer listings / sales
+- Etsy magnet production / custom orders
+- COGS and P&L reporting
+- National Dex collection view
+- optional card-image retrieval and caching
