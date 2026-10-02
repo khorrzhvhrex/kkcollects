@@ -248,7 +248,7 @@ select option {
   justify-content: flex-start;
 }
 
-.filters input {
+.filters #search {
   min-width: 270px;
 }
 
@@ -447,9 +447,8 @@ td.notes {
 .check-label input {
   width: 14px;
   height: 14px;
-
+  min-width: 0;
   margin: 0;
-
   flex: 0 0 auto;
 }
 
