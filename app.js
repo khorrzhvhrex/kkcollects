@@ -1015,6 +1015,10 @@ $("basis").addEventListener("blur", () => {
   }
 });
 
+$("setSearch").addEventListener("focus", () => {
+  $("setSearch").value = "";
+});
+
 $("setSearch").addEventListener(
   "change",
   applySetSearchSelection
