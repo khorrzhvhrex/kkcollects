@@ -2268,6 +2268,7 @@ function initializeInventoryHeaders() {
     "resize",
     closeColumnFilter
   );
+  }
 
 function updateInventoryHeaderState() {
   document
