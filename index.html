@@ -12,7 +12,7 @@
   <header>
     <div>
       <h1>KKM Card Tracker</h1>
-      <p>Local-first Pokémon card inventory and legacy intake.</p>
+      <p>Local-first Pokémon card inventory. Card metadata is served from this repository.</p>
     </div>
     <div class="header-actions">
       <button id="exportJsonBtn">Export JSON</button>
@@ -91,6 +91,20 @@
             </select>
           </label>
 
+          <label id="editionField" hidden>
+            Edition
+            <select id="edition">
+              <option>Unlimited</option>
+              <option>1st Edition</option>
+            </select>
+          </label>
+
+          <label id="specialPrintingField" class="wide" hidden>
+            Special Printing
+            <select id="specialPrinting"></select>
+            <small id="specialPrintingStatus" class="field-status"></small>
+          </label>
+
           <label>
             Condition
             <select id="condition">
@@ -106,7 +120,7 @@
           <label>
             Quantity
             <input id="quantity" type="number" min="0" value="1" required />
-            <small class="field-status">0 archives the record instead of deleting it.</small>
+            <small class="field-status">0 retains the record as inactive.</small>
           </label>
 
           <label>
@@ -138,8 +152,10 @@
           </label>
         </div>
 
+        <div id="sourceCardMeta" class="source-meta" hidden></div>
+
         <div id="otherVariantWarning" class="inline-warning" hidden>
-          “Other” treatment needs a note describing what makes this printing different.
+          “Other” treatment requires a note describing the physical printing.
         </div>
 
         <div class="form-actions">
@@ -163,7 +179,7 @@
           <small>Zero-quantity records are retained and hidden by default.</small>
         </div>
         <div class="filters">
-          <input id="search" placeholder="Search name, set, #, notes..." />
+          <input id="search" placeholder="Search name, set, #, printing, notes..." />
           <select id="statusFilter">
             <option value="">All statuses</option>
             <option>Legacy Inventory</option>
@@ -198,6 +214,8 @@
               <th>Lang</th>
               <th>Size</th>
               <th>Treatment</th>
+              <th>Edition</th>
+              <th>Special</th>
               <th>Cond.</th>
               <th>Qty</th>
               <th>Basis</th>
@@ -213,7 +231,7 @@
   </main>
 
   <template id="emptyTemplate">
-    <tr><td colspan="13" class="empty">No matching cards logged yet.</td></tr>
+    <tr><td colspan="15" class="empty">No matching cards logged yet.</td></tr>
   </template>
 
   <script src="app.js"></script>
