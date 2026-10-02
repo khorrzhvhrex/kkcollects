@@ -29,6 +29,7 @@ let loadedSetData = null;
 let resolvedSourceCard = null;
 let tableState = loadTableState();
 let activeFilterColumn = null;
+const expandedCondensedGroups = new Set();
 
 function formatDexNumber(number) {
   const digits = String(number ?? "").replace(/\D/g, "");
@@ -1235,6 +1236,22 @@ $("columnsBtn").addEventListener(
   }
 );
 
+$("detailedViewBtn")
+  .addEventListener(
+    "click",
+    () => {
+      setInventoryView("detailed");
+    }
+  );
+
+$("condensedViewBtn")
+  .addEventListener(
+    "click",
+    () => {
+      setInventoryView("condensed");
+    }
+  );
+
 $("manageStatusesBtn").addEventListener(
   "click",
   event => {
@@ -1476,7 +1493,8 @@ function loadTableState() {
     sortKey: "dex",
     sortDir: "asc",
     filters: {},
-    hiddenColumns: []
+    hiddenColumns: [],
+    viewMode: "detailed"
   };
 
   try {
@@ -1486,19 +1504,27 @@ function loadTableState() {
 
     return {
       sortKey: saved?.sortKey || fallback.sortKey,
+
       sortDir:
         saved?.sortDir === "desc"
           ? "desc"
           : "asc",
+
       filters:
         saved?.filters &&
         typeof saved.filters === "object"
           ? saved.filters
           : {},
+
       hiddenColumns:
         Array.isArray(saved?.hiddenColumns)
           ? saved.hiddenColumns
-          : []
+          : [],
+
+      viewMode:
+        saved?.viewMode === "condensed"
+          ? "condensed"
+          : "detailed"
     };
   } catch {
     return fallback;
@@ -2162,11 +2188,15 @@ function resetInventoryFilters() {
     ...(tableState.hiddenColumns || [])
   ];
 
+  const viewMode =
+    tableState.viewMode || "detailed";
+
   tableState = {
     sortKey: "dex",
     sortDir: "asc",
     filters: {},
-    hiddenColumns
+    hiddenColumns,
+    viewMode
   };
 
   saveTableState();
@@ -2409,6 +2439,221 @@ function filteredCards() {
   return list;
 }
 
+function condensedGroupKey(card) {
+  return JSON.stringify([
+    card.setId || card.setName || "",
+    normalizeLocalCardNumber(
+      card.cardNumber || ""
+    ),
+    card.name || "",
+    card.language || "",
+    card.size || "Standard",
+    normalizeLegacyVariant(card.variant),
+    card.edition || "Unlimited",
+    card.specialPrintingKey ||
+      card.specialPrintingLabel ||
+      ""
+  ]);
+}
+
+function commonGroupValue(
+  members,
+  getter,
+  mixedLabel
+) {
+  const values = [
+    ...new Set(
+      members.map(member =>
+        String(
+          getter(member) ?? ""
+        ).trim()
+      )
+    )
+  ];
+
+  if (values.length === 1) {
+    return values[0];
+  }
+
+  return mixedLabel;
+}
+
+function condensedBasis(members) {
+  const activeQuantity =
+    members.reduce(
+      (sum, member) =>
+        sum +
+        Math.max(
+          0,
+          Number(member.quantity || 0)
+        ),
+      0
+    );
+
+  if (activeQuantity > 0) {
+    const totalBasis =
+      members.reduce(
+        (sum, member) => {
+          const quantity =
+            Math.max(
+              0,
+              Number(
+                member.quantity || 0
+              )
+            );
+
+          return (
+            sum +
+            (
+              quantity *
+              Number(member.basis || 0)
+            )
+          );
+        },
+        0
+      );
+
+    return totalBasis / activeQuantity;
+  }
+
+  if (!members.length) return 0;
+
+  return (
+    members.reduce(
+      (sum, member) =>
+        sum +
+        Number(member.basis || 0),
+      0
+    ) /
+    members.length
+  );
+}
+
+function condenseInventoryCards(list) {
+  const groups = new Map();
+
+  for (const card of list) {
+    const key =
+      condensedGroupKey(card);
+
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+
+    groups.get(key).push(card);
+  }
+
+  const condensed =
+    [...groups.entries()].map(
+      ([groupKey, members]) => {
+        const first = members[0];
+
+        return {
+          ...first,
+
+          quantity:
+            members.reduce(
+              (sum, member) =>
+                sum +
+                Number(
+                  member.quantity || 0
+                ),
+              0
+            ),
+
+          basis:
+            condensedBasis(members),
+
+          condition:
+            commonGroupValue(
+              members,
+              member => member.condition,
+              "Mixed"
+            ),
+
+          purchasedFrom:
+            commonGroupValue(
+              members,
+              member =>
+                member.purchasedFrom,
+              "Multiple"
+            ),
+
+          purchasedOn:
+            commonGroupValue(
+              members,
+              member =>
+                member.purchasedOn,
+              "Multiple"
+            ),
+
+          status:
+            commonGroupValue(
+              members,
+              member => member.status,
+              "Mixed"
+            ),
+
+          storage:
+            commonGroupValue(
+              members,
+              member => member.storage,
+              "Mixed"
+            ),
+
+          _isCondensed: true,
+          _groupKey: groupKey,
+          _members: members
+        };
+      }
+    );
+
+  condensed.sort((a, b) => {
+    const result =
+      compareInventoryValues(
+        a,
+        b,
+        tableState.sortKey
+      );
+
+    return tableState.sortDir === "desc"
+      ? -result
+      : result;
+  });
+
+  return condensed;
+}
+
+function updateInventoryViewButtons() {
+  const condensed =
+    tableState.viewMode ===
+    "condensed";
+
+  $("detailedViewBtn")
+    .classList.toggle(
+      "active",
+      !condensed
+    );
+
+  $("condensedViewBtn")
+    .classList.toggle(
+      "active",
+      condensed
+    );
+}
+
+function setInventoryView(mode) {
+  tableState.viewMode =
+    mode === "condensed"
+      ? "condensed"
+      : "detailed";
+
+  expandedCondensedGroups.clear();
+
+  saveTableState();
+  render();
+}
+
 function compareCardNumbers(a, b) {
   const first = normalizeLocalCardNumber(a);
   const second = normalizeLocalCardNumber(b);
@@ -2443,89 +2688,407 @@ function esc(value) {
   );
 }
 
+function createInventoryRow(
+  card,
+  options = {}
+) {
+  const {
+    detail = false
+  } = options;
+
+  const inactive =
+    Number(card.quantity || 0) === 0;
+
+  const row =
+    document.createElement("tr");
+
+  if (inactive) {
+    row.classList.add(
+      "inactive-row"
+    );
+  }
+
+  if (detail) {
+    row.classList.add(
+      "condensed-detail-row"
+    );
+  }
+
+  row.innerHTML = `
+    <td>${esc(card.dex ?? "")}</td>
+
+    <td title="${esc(card.notes)}">
+      ${esc(card.name)}
+    </td>
+
+    <td>${esc(card.setName)}</td>
+
+    <td>${esc(card.cardNumber)}</td>
+
+    <td>${esc(card.language)}</td>
+
+    <td>
+      ${esc(
+        card.size || "Standard"
+      )}
+    </td>
+
+    <td>
+      ${esc(
+        normalizeLegacyVariant(
+          card.variant
+        )
+      )}
+    </td>
+
+    <td>
+      ${esc(
+        card.edition ||
+        "Unlimited"
+      )}
+    </td>
+
+    <td>
+      ${
+        card.specialPrintingLabel
+          ? `
+            <span class="special-badge">
+              ${esc(
+                card.specialPrintingLabel
+              )}
+            </span>
+          `
+          : ""
+      }
+    </td>
+
+    <td>
+      ${esc(card.condition)}
+    </td>
+
+    <td>
+      ${Number(
+        card.quantity || 0
+      )}
+    </td>
+
+    <td>
+      $${Number(
+        card.basis || 0
+      ).toFixed(2)}
+    </td>
+
+    <td>
+      ${esc(
+        card.purchasedFrom || ""
+      )}
+    </td>
+
+    <td>
+      ${esc(
+        card.purchasedOn || ""
+      )}
+    </td>
+
+    <td>
+      ${esc(card.status)}
+    </td>
+
+    <td>
+      ${esc(card.storage)}
+    </td>
+
+    <td class="row-actions">
+      <button
+        onclick="editCard('${card.id}')"
+      >
+        Edit
+      </button>
+
+      ${
+        inactive
+          ? `
+            <button
+              onclick="restoreCard('${card.id}')"
+            >
+              Restore
+            </button>
+          `
+          : `
+            <button
+              onclick="zeroOutCard('${card.id}')"
+            >
+              Zero Out
+            </button>
+          `
+      }
+    </td>
+  `;
+
+  return row;
+}
+
+function createCondensedRow(group) {
+  const row =
+    document.createElement("tr");
+
+  const inactive =
+    Number(group.quantity || 0) === 0;
+
+  if (inactive) {
+    row.classList.add(
+      "inactive-row"
+    );
+  }
+
+  row.classList.add(
+    "condensed-row"
+  );
+
+  const expanded =
+    expandedCondensedGroups.has(
+      group._groupKey
+    );
+
+  row.innerHTML = `
+    <td>${esc(group.dex ?? "")}</td>
+
+    <td title="${esc(group.notes)}">
+      ${esc(group.name)}
+    </td>
+
+    <td>${esc(group.setName)}</td>
+
+    <td>${esc(group.cardNumber)}</td>
+
+    <td>${esc(group.language)}</td>
+
+    <td>
+      ${esc(
+        group.size || "Standard"
+      )}
+    </td>
+
+    <td>
+      ${esc(
+        normalizeLegacyVariant(
+          group.variant
+        )
+      )}
+    </td>
+
+    <td>
+      ${esc(
+        group.edition ||
+        "Unlimited"
+      )}
+    </td>
+
+    <td>
+      ${
+        group.specialPrintingLabel
+          ? `
+            <span class="special-badge">
+              ${esc(
+                group.specialPrintingLabel
+              )}
+            </span>
+          `
+          : ""
+      }
+    </td>
+
+    <td>
+      ${esc(group.condition)}
+    </td>
+
+    <td>
+      <strong>
+        ${Number(
+          group.quantity || 0
+        )}
+      </strong>
+    </td>
+
+    <td>
+      $${Number(
+        group.basis || 0
+      ).toFixed(2)}
+    </td>
+
+    <td>
+      ${esc(
+        group.purchasedFrom || ""
+      )}
+    </td>
+
+    <td>
+      ${esc(
+        group.purchasedOn || ""
+      )}
+    </td>
+
+    <td>
+      ${esc(group.status)}
+    </td>
+
+    <td>
+      ${esc(group.storage)}
+    </td>
+
+    <td class="row-actions">
+      <button
+        type="button"
+        class="condensed-toggle-button"
+      >
+        ${expanded
+          ? "Hide Details"
+          : "Details"}
+      </button>
+    </td>
+  `;
+
+  row
+    .querySelector(
+      ".condensed-toggle-button"
+    )
+    .addEventListener(
+      "click",
+      () => {
+        if (
+          expandedCondensedGroups.has(
+            group._groupKey
+          )
+        ) {
+          expandedCondensedGroups.delete(
+            group._groupKey
+          );
+        } else {
+          expandedCondensedGroups.add(
+            group._groupKey
+          );
+        }
+
+        render();
+      }
+    );
+
+  return row;
+}
+
 function render() {
-  const list = filteredCards();
+  const filtered =
+    filteredCards();
+
+  const condensed =
+    tableState.viewMode ===
+    "condensed";
+
+  const list =
+    condensed
+      ? condenseInventoryCards(
+          filtered
+        )
+      : filtered;
 
   updateInventoryHeaderState();
+  updateInventoryViewButtons();
 
   body.innerHTML = "";
 
   if (!list.length) {
     body.appendChild(
-      $("emptyTemplate").content.cloneNode(true)
+      $("emptyTemplate")
+        .content
+        .cloneNode(true)
     );
-  } else {
+  } else if (!condensed) {
     for (const card of list) {
-      const inactive = Number(card.quantity || 0) === 0;
-      const row = document.createElement("tr");
+      body.appendChild(
+        createInventoryRow(card)
+      );
+    }
+  } else {
+    for (const group of list) {
+      body.appendChild(
+        createCondensedRow(group)
+      );
 
-      if (inactive) row.classList.add("inactive-row");
-
-      row.innerHTML = `
-        <td>${esc(card.dex ?? "")}</td>
-        <td title="${esc(card.notes)}">${esc(card.name)}</td>
-        <td>${esc(card.setName)}</td>
-        <td>${esc(card.cardNumber)}</td>
-        <td>${esc(card.language)}</td>
-        <td>${esc(card.size || "Standard")}</td>
-        <td>${esc(normalizeLegacyVariant(card.variant))}</td>
-        <td>${esc(card.edition || "Unlimited")}</td>
-        <td>${card.specialPrintingLabel
-          ? `<span class="special-badge">${esc(card.specialPrintingLabel)}</span>`
-          : ""
-        }</td>
-        <td>${esc(card.condition)}</td>
-        <td>${Number(card.quantity || 0)}</td>
-        <td>$${Number(card.basis || 0).toFixed(2)}</td>
-        <td>${esc(card.purchasedFrom || "")}</td>
-        <td>${esc(card.purchasedOn || "")}</td>
-        <td>${esc(card.status)}</td>
-        <td>${esc(card.storage)}</td>
-        <td class="row-actions">
-          <button onclick="editCard('${card.id}')">Edit</button>
-          ${
-            inactive
-              ? `<button onclick="restoreCard('${card.id}')">Restore</button>`
-              : `<button onclick="zeroOutCard('${card.id}')">Zero Out</button>`
-          }
-        </td>
-      `;
-
-      body.appendChild(row);
+      if (
+        expandedCondensedGroups.has(
+          group._groupKey
+        )
+      ) {
+        for (
+          const member of
+          group._members
+        ) {
+          body.appendChild(
+            createInventoryRow(
+              member,
+              {
+                detail: true
+              }
+            )
+          );
+        }
+      }
     }
   }
 
-  const active = cards.filter(
-    card => Number(card.quantity || 0) > 0
-  );
+  const active =
+    cards.filter(
+      card =>
+        Number(
+          card.quantity || 0
+        ) > 0
+    );
 
-  const inactive = cards.filter(
-    card => Number(card.quantity || 0) === 0
-  );
+  const inactive =
+    cards.filter(
+      card =>
+        Number(
+          card.quantity || 0
+        ) === 0
+    );
 
   $("uniqueCount").textContent =
     active.length.toLocaleString();
 
   $("cardCount").textContent =
-    active.reduce(
-      (sum, card) => sum + Number(card.quantity || 0),
-      0
-    ).toLocaleString();
+    active
+      .reduce(
+        (sum, card) =>
+          sum +
+          Number(
+            card.quantity || 0
+          ),
+        0
+      )
+      .toLocaleString();
 
   $("pcCount").textContent =
     active
-      .filter(card => card.status === "PC")
+      .filter(
+        card =>
+          card.status === "PC"
+      )
       .reduce(
-        (sum, card) => sum + Number(card.quantity || 0),
+        (sum, card) =>
+          sum +
+          Number(
+            card.quantity || 0
+          ),
         0
       )
       .toLocaleString();
 
   $("inactiveCount").textContent =
-    inactive.length.toLocaleString();
-  
+    inactive.length
+      .toLocaleString();
+
   applyColumnVisibility();
-  }
+}
 
 function download(name, content, type) {
   const blob = new Blob([content], { type });
