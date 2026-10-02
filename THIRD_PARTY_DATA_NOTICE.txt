@@ -1,8 +1,9 @@
 THIRD-PARTY DATA NOTICE
 =======================
 
-The optional maintenance updater uses TCGdex as a source for Pokémon TCG
-set/card checklist metadata. TCGdex's cards-database project is MIT licensed.
+The optional maintenance workflow uses the open-source TCGdex cards-database
+repository as the upstream source for Pokémon TCG card checklist and physical
+printing metadata.
 
 MIT License
 
