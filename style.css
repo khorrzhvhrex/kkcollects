@@ -737,3 +737,64 @@ select:disabled {
 .status-manager-add button {
   flex: 0 0 auto;
 }
+
+/* =========================================================
+   Detailed / Condensed inventory views
+   ========================================================= */
+
+.inventory-view-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+
+  border: 1px solid var(--border);
+  border-radius: 8px;
+
+  overflow: hidden;
+}
+
+.inventory-view-toggle button {
+  border: 0;
+  border-radius: 0;
+
+  padding: 9px 11px;
+
+  background: var(--panel-soft);
+}
+
+.inventory-view-toggle button + button {
+  border-left:
+    1px solid var(--border);
+}
+
+.inventory-view-toggle button.active {
+  background: var(--accent-soft);
+  color: #ffffff;
+}
+
+.condensed-row td {
+  background:
+    rgba(142, 99, 199, 0.035);
+}
+
+.condensed-row:hover td {
+  background: #2b2039;
+}
+
+.condensed-detail-row td {
+  background: #18111f;
+  color: var(--text-soft);
+
+  font-size: 12px;
+}
+
+.condensed-detail-row td:first-child {
+  padding-left: 22px;
+}
+
+.condensed-detail-row:hover td {
+  background: #241a30;
+}
+
+.condensed-toggle-button {
+  white-space: nowrap;
+}
