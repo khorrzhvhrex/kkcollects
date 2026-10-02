@@ -450,3 +450,7 @@ select:disabled {
   color: var(--text-soft);
   background: #21182d;
 }
+
+[hidden] {
+  display: none !important;
+}
