@@ -11,21 +11,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+      - name: Check out KKM repository
+        uses: actions/checkout@v5
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Node
+        uses: actions/setup-node@v5
         with:
-          python-version: "3.12"
+          node-version: "24"
 
-      - name: Refresh local data
-        run: python tools/update_local_data.py
+      - name: Fetch current TCGdex source database
+        run: |
+          git clone --depth 1 https://github.com/tcgdex/cards-database.git /tmp/tcgdex-cards
 
-      - name: Commit refreshed data
+      - name: Build compact local card database
+        run: |
+          node tools/update_local_data.mjs --source /tmp/tcgdex-cards
+
+      - name: Commit refreshed local data
         run: |
           if git diff --quiet -- data; then
-            echo "No card-data changes found."
+            echo "No local card-data changes found."
             exit 0
           fi
 
