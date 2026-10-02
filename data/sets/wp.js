@@ -1,1 +1,0 @@
-window.KKM_SET_DATA=window.KKM_SET_DATA||{};window.KKM_SET_DATA["wp"]={"id":"wp","name":"W Promotional","seriesId":"base","seriesName":"Base","releaseDate":"1999-09-01","officialCount":7,"totalCount":7,"cards":[]};

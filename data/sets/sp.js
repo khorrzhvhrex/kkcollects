@@ -1,1 +1,0 @@
-window.KKM_SET_DATA=window.KKM_SET_DATA||{};window.KKM_SET_DATA["sp"]={"id":"sp","name":"Sample","seriesId":"ecard","seriesName":"E-Card","releaseDate":"2002-08-01","officialCount":10,"totalCount":10,"cards":[]};

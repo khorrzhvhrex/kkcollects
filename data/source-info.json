@@ -1,5 +1,19 @@
 {
-  "generatedAt": null,
+  "generatedAt": "2026-10-02T01:45:03.479Z",
+  "source": "TCGdex cards-database GitHub repository",
   "runtimeExternalDependencies": [],
-  "note": "Run the GitHub Action after installing v0.3 to generate local card data."
+  "setCount": 204,
+  "cardCount": 21393,
+  "printingData": {
+    "detailedCards": 15011,
+    "legacyCards": 296,
+    "inferredCards": 6086,
+    "failedCards": 0
+  },
+  "notes": [
+    "The live tracker reads only committed repository files.",
+    "officialCount is metadata and is never a card-number validity ceiling.",
+    "Detailed physical printings preserve treatment, size, edition, foil, subtype, stamps, language restrictions, and TCGplayer variant ID when present.",
+    "Card images and gameplay metadata are intentionally excluded."
+  ]
 }
