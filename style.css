@@ -372,7 +372,10 @@ td.notes {
 }
 
 
-/* v2 additions */
+/* =========================================================
+   KKM Card Tracker v0.3 additions
+   ========================================================= */
+
 .field-status {
   min-height: 14px;
   margin-top: 2px;
@@ -389,6 +392,21 @@ td.notes {
   background: rgba(185, 92, 118, 0.12);
   color: #f0c7d2;
   font-size: 13px;
+}
+
+.source-meta {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: #1b1424;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.source-meta strong {
+  color: var(--text-soft);
 }
 
 .check-label {
@@ -409,7 +427,8 @@ td.notes {
   opacity: 0.72;
 }
 
-input[readonly] {
+input[readonly],
+select:disabled {
   background: #21192a;
   color: var(--text-muted);
 }
@@ -420,4 +439,14 @@ input[readonly] {
 
 .inactive-row:hover td {
   opacity: 0.78;
+}
+
+.special-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--text-soft);
+  background: #21182d;
 }
