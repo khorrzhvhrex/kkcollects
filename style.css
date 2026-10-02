@@ -653,3 +653,87 @@ select:disabled {
 #columnsBtn {
   white-space: nowrap;
 }
+
+/* =========================================================
+   Custom status field
+   ========================================================= */
+
+.status-input-row {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.status-input-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.status-input-row button {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+}
+
+.status-manager-popover {
+  position: absolute;
+  z-index: 120;
+
+  width: 300px;
+
+  padding: 12px;
+
+  border: 1px solid var(--border);
+  border-radius: 9px;
+
+  background: #21182d;
+
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.status-manager-list {
+  display: grid;
+  gap: 5px;
+
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.status-manager-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  padding: 5px 0;
+}
+
+.status-manager-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-remove-button {
+  flex: 0 0 auto;
+  padding: 5px 7px;
+  font-size: 11px;
+}
+
+.status-manager-add {
+  display: flex;
+  gap: 6px;
+
+  margin-top: 10px;
+  padding-top: 10px;
+
+  border-top: 1px solid var(--border-soft);
+}
+
+.status-manager-add input {
+  min-width: 0;
+}
+
+.status-manager-add button {
+  flex: 0 0 auto;
+}
