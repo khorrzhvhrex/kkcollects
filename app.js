@@ -152,43 +152,150 @@ function newId() {
 
 function populateSetDropdown() {
   const select = $("setId");
-  const index = Array.isArray(window.KKM_SET_INDEX) ? window.KKM_SET_INDEX : [];
-  const current = select.value;
+  const search = $("setSearch");
+  const datalist = $("setOptions");
 
-  select.innerHTML = `<option value="">Manual / Promo Entry</option>`;
+  const index = Array.isArray(window.KKM_SET_INDEX)
+    ? window.KKM_SET_INDEX
+    : [];
+
+  select.innerHTML =
+    `<option value="">Manual / Promo Entry</option>`;
+
+  datalist.innerHTML = "";
+
+  const manualOption = document.createElement("option");
+  manualOption.value = "Manual / Promo Entry";
+  datalist.appendChild(manualOption);
 
   const sets = [...index].sort((a, b) => {
     const aDate = a.releaseDate || "";
     const bDate = b.releaseDate || "";
 
-    if (aDate !== bDate) return bDate.localeCompare(aDate);
-    return String(a.name || "").localeCompare(String(b.name || ""));
+    if (aDate !== bDate) {
+      return bDate.localeCompare(aDate);
+    }
+
+    return String(a.name || "")
+      .localeCompare(String(b.name || ""));
   });
 
   for (const set of sets) {
-    const option = document.createElement("option");
-    option.value = set.id;
-    option.dataset.name = set.name;
+    const date = set.releaseDate
+      ? ` (${set.releaseDate})`
+      : "";
 
-    const date = set.releaseDate ? ` (${set.releaseDate})` : "";
-    option.textContent = `${set.name}${date}`;
+    const displayLabel = `${set.name}${date}`;
 
-    select.appendChild(option);
+    // Hidden ID select used internally by the app.
+    const internalOption = document.createElement("option");
+
+    internalOption.value = set.id;
+    internalOption.dataset.name = set.name;
+    internalOption.dataset.displayLabel = displayLabel;
+    internalOption.textContent = displayLabel;
+
+    select.appendChild(internalOption);
+
+    // Visible searchable suggestion.
+    const searchOption = document.createElement("option");
+
+    searchOption.value = displayLabel;
+
+    datalist.appendChild(searchOption);
   }
 
-  const rememberedSet = localStorage.getItem(LAST_SET_KEY);
+  const rememberedSet =
+    localStorage.getItem(LAST_SET_KEY);
 
   if (
     rememberedSet &&
-    [...select.options].some(option => option.value === rememberedSet)
+    [...select.options].some(
+      option => option.value === rememberedSet
+    )
   ) {
     select.value = rememberedSet;
-  } else if (
-    current &&
-    [...select.options].some(option => option.value === current)
-  ) {
-    select.value = current;
+
+    const selected =
+      select.selectedOptions[0];
+
+    search.value =
+      selected?.dataset?.displayLabel ||
+      selected?.dataset?.name ||
+      "";
+  } else {
+    select.value = "";
+    search.value = "Manual / Promo Entry";
   }
+}
+
+function findSetOptionFromSearch(value) {
+  const normalized =
+    String(value || "").trim().toLowerCase();
+
+  if (
+    !normalized ||
+    normalized === "manual / promo entry"
+  ) {
+    return $("setId").options[0];
+  }
+
+  return [...$("setId").options].find(option => {
+    if (!option.value) return false;
+
+    const name =
+      String(option.dataset.name || "")
+        .toLowerCase();
+
+    const label =
+      String(option.dataset.displayLabel || "")
+        .toLowerCase();
+
+    return (
+      normalized === name ||
+      normalized === label
+    );
+  }) || null;
+}
+
+async function applySetSearchSelection() {
+  const option =
+    findSetOptionFromSearch(
+      $("setSearch").value
+    );
+
+  if (!option) {
+    return;
+  }
+
+  const selectedSetId = option.value;
+
+  $("setId").value = selectedSetId;
+
+  if (selectedSetId) {
+    localStorage.setItem(
+      LAST_SET_KEY,
+      selectedSetId
+    );
+
+    $("setSearch").value =
+      option.dataset.displayLabel ||
+      option.dataset.name ||
+      "";
+  } else {
+    localStorage.removeItem(LAST_SET_KEY);
+
+    $("setSearch").value =
+      "Manual / Promo Entry";
+  }
+
+  $("cardNumber").value = "";
+  $("name").value = "";
+  $("dex").value = "";
+
+  await selectImportedSet(selectedSetId);
+
+  $("cardNumber").focus();
 }
 
 function loadLocalSet(setId) {
@@ -787,10 +894,20 @@ function clearForm() {
     $("setName").value = preservedSetName;
     $("setName").readOnly = true;
     $("manualSetLabel").classList.add("muted-field");
+
+    const selectedSetOption =
+      $("setId").selectedOptions[0];
+    
+    $("setSearch").value =
+      selectedSetOption?.dataset?.displayLabel ||
+      selectedSetOption?.dataset?.name ||
+      "";
   } else {
     $("setName").value = "";
     $("setName").readOnly = false;
     $("manualSetLabel").classList.remove("muted-field");
+  
+    $("setSearch").value = "Manual / Promo Entry";
   }
 
   $("cardLookupStatus").textContent = "";
@@ -898,22 +1015,20 @@ $("basis").addEventListener("blur", () => {
   }
 });
 
-$("setId").addEventListener("change", async () => {
-  const selectedSetId = $("setId").value;
+$("setSearch").addEventListener(
+  "change",
+  applySetSearchSelection
+);
 
-  if (selectedSetId) {
-    localStorage.setItem(LAST_SET_KEY, selectedSetId);
-  } else {
-    localStorage.removeItem(LAST_SET_KEY);
+$("setSearch").addEventListener(
+  "keydown",
+  event => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      applySetSearchSelection();
+    }
   }
-
-  $("cardNumber").value = "";
-  $("name").value = "";
-  $("dex").value = "";
-
-  await selectImportedSet(selectedSetId);
-  $("cardNumber").focus();
-});
+);
 
 $("cardNumber").addEventListener("blur", () => {
   resolveCardFromNumber();
