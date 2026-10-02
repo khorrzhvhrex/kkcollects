@@ -103,12 +103,15 @@ button.primary:hover {
 }
 
 main {
+  width: 100%;
   max-width: 1500px;
   margin: 0 auto;
   padding: 22px;
 
   display: grid;
   gap: 18px;
+
+  min-width: 0;
 }
 
 .panel {
@@ -118,6 +121,9 @@ main {
   padding: 18px;
 
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+
+  min-width: 0;
+  max-width: 100%;
 }
 
 .panel h2 {
@@ -251,7 +257,12 @@ select option {
 }
 
 .table-wrap {
-  overflow: auto;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+
+  overflow-x: auto;
+  overflow-y: visible;
 
   border: 1px solid var(--border-soft);
   border-radius: 9px;
@@ -261,9 +272,10 @@ select option {
 
 table {
   width: 100%;
-  border-collapse: collapse;
-
   min-width: 1200px;
+  max-width: none;
+
+  border-collapse: collapse;
 
   font-size: 13px;
 }
