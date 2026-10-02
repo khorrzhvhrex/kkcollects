@@ -2675,6 +2675,34 @@ function compareCardNumbers(a, b) {
   );
 }
 
+function tcgPlayerSearchUrl(card) {
+  const parts = [
+    card.name,
+    card.setName,
+    card.cardNumber,
+    normalizeLegacyVariant(
+      card.variant
+    )
+  ]
+    .map(value =>
+      String(value || "").trim()
+    )
+    .filter(Boolean);
+
+  const query =
+    encodeURIComponent(
+      parts.join(" ")
+    );
+
+  return (
+    "https://www.tcgplayer.com/" +
+    "search/pokemon/product" +
+    "?productLineName=pokemon" +
+    `&q=${query}` +
+    "&view=grid"
+  );
+}
+
 function esc(value) {
   return String(value ?? "").replace(
     /[&<>"']/g,
@@ -2723,7 +2751,21 @@ function createInventoryRow(
 
     <td>${esc(card.setName)}</td>
 
-    <td>${esc(card.cardNumber)}</td>
+    <td class="tcg-search-cell">
+      <a
+        class="tcg-search-link"
+        href="${esc(
+          tcgPlayerSearchUrl(card)
+        )}"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Search TCGPlayer for ${esc(
+          card.name
+        )}"
+      >
+        ${esc(card.cardNumber)}
+      </a>
+    </td>
 
     <td>${esc(card.language)}</td>
 
@@ -2859,7 +2901,21 @@ function createCondensedRow(group) {
 
     <td>${esc(group.setName)}</td>
 
-    <td>${esc(group.cardNumber)}</td>
+    <td class="tcg-search-cell">
+      <a
+        class="tcg-search-link"
+        href="${esc(
+          tcgPlayerSearchUrl(group)
+        )}"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Search TCGPlayer for ${esc(
+          group.name
+        )}"
+      >
+        ${esc(group.cardNumber)}
+      </a>
+    </td>
 
     <td>${esc(group.language)}</td>
 
