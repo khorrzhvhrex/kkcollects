@@ -1235,6 +1235,17 @@ $("columnsBtn").addEventListener(
   }
 );
 
+$("manageStatusesBtn").addEventListener(
+  "click",
+  event => {
+    event.stopPropagation();
+
+    closeColumnFilter();
+    closeColumnVisibility();
+    openStatusManager();
+  }
+);
+
 $("variant").addEventListener("change", () => {
   $("otherVariantWarning").hidden = $("variant").value !== "Other";
   updateDependentPrintingControls();
@@ -2233,12 +2244,30 @@ function initializeInventoryHeaders() {
       closeColumnVisibility();
     }
   );
-
+  
+  document.addEventListener(
+    "click",
+    event => {
+      const popover =
+        $("statusManagerPopover");
+  
+      if (
+        !popover ||
+        popover.hidden ||
+        popover.contains(event.target) ||
+        event.target.closest("#manageStatusesBtn")
+      ) {
+        return;
+      }
+  
+      closeStatusManager();
+    }
+  );
+  
   window.addEventListener(
     "resize",
     closeColumnFilter
   );
-}
 
 function updateInventoryHeaderState() {
   document
@@ -2612,6 +2641,7 @@ $("importJsonInput").addEventListener("change", async event => {
 });
 
 populateSetDropdown();
+populateStatusOptions();
 resetPrintingControls();
 initializeInventoryHeaders();
 
