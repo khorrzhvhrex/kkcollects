@@ -822,8 +822,7 @@ select:disabled {
     pointer;
 }
 
-.market-search-cell:hover
-.market-search-trigger,
+.market-search-trigger:hover,
 .market-search-trigger:focus-visible {
   color: var(--accent-hover);
 
@@ -833,18 +832,11 @@ select:disabled {
   outline: none;
 }
 
-.market-search-menu {
-  position: absolute;
-  z-index: 200;
-
-  left: 50%;
-  bottom: calc(100% + 8px);
+.market-lookup-popover {
+  position: fixed;
+  z-index: 300;
 
   width: 150px;
-
-  transform:
-    translateX(-50%)
-    translateY(3px);
 
   padding: 7px;
 
@@ -858,30 +850,6 @@ select:disabled {
   box-shadow:
     0 8px 24px
     rgba(0, 0, 0, 0.4);
-
-  opacity: 0;
-  visibility: hidden;
-
-  pointer-events: none;
-
-  transition:
-    opacity 0.12s ease,
-    transform 0.12s ease,
-    visibility 0.12s ease;
-}
-
-.market-search-cell:hover
-.market-search-menu,
-.market-search-cell:focus-within
-.market-search-menu {
-  opacity: 1;
-  visibility: visible;
-
-  pointer-events: auto;
-
-  transform:
-    translateX(-50%)
-    translateY(0);
 }
 
 .market-search-title {
@@ -898,7 +866,7 @@ select:disabled {
   margin-bottom: 4px;
 }
 
-.market-search-menu a {
+.market-lookup-popover a {
   display: block;
 
   padding: 6px 7px;
@@ -914,8 +882,8 @@ select:disabled {
   cursor: pointer;
 }
 
-.market-search-menu a:hover,
-.market-search-menu a:focus-visible {
+.market-lookup-popover a:hover,
+.market-lookup-popover a:focus-visible {
   background: var(--panel-hover);
   color: #ffffff;
 
