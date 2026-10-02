@@ -118,6 +118,8 @@ function migrateCard(card) {
     sourceCategory: card.sourceCategory || "",
     sourceSuffix: card.sourceSuffix || "",
     sourcePrinting: card.sourcePrinting || null,
+    purchasedFrom: card.purchasedFrom || "",
+    purchasedOn: card.purchasedOn || "",
     inactiveAt: quantity === 0
       ? (card.inactiveAt || card.updatedAt || new Date().toISOString())
       : null
@@ -827,6 +829,8 @@ function formData() {
     condition: $("condition").value,
     quantity,
     basis: Number($("basis").value || 0),
+    purchasedFrom: $("purchasedFrom").value.trim(),
+    purchasedOn: $("purchasedOn").value,
     status: $("status").value,
     storage: $("storage").value.trim(),
     notes: $("notes").value.trim(),
@@ -851,10 +855,11 @@ function saveEntryDefaults() {
     language: $("language").value,
     status: $("status").value,
     storage: $("storage").value,
-    basis: $("basis").value
+    basis: $("basis").value,
+    purchasedFrom: $("purchasedFrom").value,
+    purchasedOn: $("purchasedOn").value
   };
-
-  localStorage.setItem(
+    localStorage.setItem(
     LAST_ENTRY_DEFAULTS_KEY,
     JSON.stringify(defaults)
   );
@@ -877,6 +882,8 @@ function clearForm() {
   const preservedStatus = $("status").value;
   const preservedStorage = $("storage").value;
   const preservedBasis = $("basis").value;
+  const preservedPurchasedFrom = $("purchasedFrom").value;
+  const preservedPurchasedOn = $("purchasedOn").value;
 
   saveEntryDefaults();
 
@@ -891,6 +898,8 @@ function clearForm() {
   $("status").value = preservedStatus || "Legacy Inventory";
   $("storage").value = preservedStorage || "";
   $("basis").value = preservedBasis || "0.00";
+  $("purchasedFrom").value = preservedPurchasedFrom || "";
+  $("purchasedOn").value = preservedPurchasedOn || "";
 
   // Preserve currently selected imported set.
   $("setId").value = preservedSetId || "";
@@ -954,6 +963,16 @@ $("resetFiltersBtn").addEventListener(
   resetInventoryFilters
 );
 
+$("columnsBtn").addEventListener(
+  "click",
+  event => {
+    event.stopPropagation();
+
+    closeColumnFilter();
+    openColumnVisibility();
+  }
+);
+
 $("variant").addEventListener("change", () => {
   $("otherVariantWarning").hidden = $("variant").value !== "Other";
   updateDependentPrintingControls();
@@ -981,6 +1000,9 @@ $("specialPrinting").addEventListener("change", () => {
 $("status").addEventListener("change", saveEntryDefaults);
 $("storage").addEventListener("change", saveEntryDefaults);
 $("storage").addEventListener("blur", saveEntryDefaults);
+$("purchasedFrom").addEventListener("change", saveEntryDefaults);
+$("purchasedFrom").addEventListener("blur", saveEntryDefaults);
+$("purchasedOn").addEventListener("change", saveEntryDefaults);
 
 $("language").addEventListener("change", () => {
   saveEntryDefaults();
@@ -1091,6 +1113,8 @@ async function editCard(id) {
   $("condition").value = card.condition || "NM";
   $("quantity").value = Number(card.quantity || 0);
   $("basis").value = Number(card.basis || 0).toFixed(2);
+  $("purchasedFrom").value = card.purchasedFrom || "";
+  $("purchasedOn").value = card.purchasedOn || "";
   $("status").value = card.status || "Legacy Inventory";
   $("storage").value = card.storage || "";
   $("notes").value = card.notes || "";
@@ -1158,7 +1182,8 @@ function loadTableState() {
   const fallback = {
     sortKey: "dex",
     sortDir: "asc",
-    filters: {}
+    filters: {},
+    hiddenColumns: []
   };
 
   try {
@@ -1176,7 +1201,11 @@ function loadTableState() {
         saved?.filters &&
         typeof saved.filters === "object"
           ? saved.filters
-          : {}
+          : {},
+      hiddenColumns:
+        Array.isArray(saved?.hiddenColumns)
+          ? saved.hiddenColumns
+          : []
     };
   } catch {
     return fallback;
@@ -1255,7 +1284,17 @@ const TABLE_COLUMNS = {
       Number(card.basis || 0).toFixed(2),
     filterType: "text"
   },
-
+  
+  purchasedFrom: {
+    get: card => card.purchasedFrom || "",
+    filterType: "select"
+  },
+  
+  purchasedOn: {
+    get: card => card.purchasedOn || "",
+    filterType: "select"
+  },
+  
   status: {
     get: card => card.status ?? "",
     filterType: "select"
@@ -1266,6 +1305,219 @@ const TABLE_COLUMNS = {
     filterType: "select"
   }
 };
+
+const INVENTORY_COLUMN_ORDER = [
+  "dex",
+  "name",
+  "setName",
+  "cardNumber",
+  "language",
+  "size",
+  "variant",
+  "edition",
+  "specialPrintingLabel",
+  "condition",
+  "quantity",
+  "basis",
+  "purchasedFrom",
+  "purchasedOn",
+  "status",
+  "storage",
+  "actions"
+];
+
+const INVENTORY_COLUMN_LABELS = {
+  dex: "Dex",
+  name: "Name",
+  setName: "Set / Promo",
+  cardNumber: "Card #",
+  language: "Language",
+  size: "Size",
+  variant: "Treatment",
+  edition: "Edition",
+  specialPrintingLabel: "Special",
+  condition: "Condition",
+  quantity: "Quantity",
+  basis: "Basis",
+  purchasedFrom: "Purchased From",
+  purchasedOn: "Purchased On",
+  status: "Status",
+  storage: "Storage"
+};
+
+function applyColumnVisibility() {
+  const hidden = new Set(
+    tableState.hiddenColumns || []
+  );
+
+  const table = document.querySelector(
+    ".table-wrap table"
+  );
+
+  if (!table) return;
+
+  const headerCells =
+    table.querySelectorAll("thead th");
+
+  headerCells.forEach((cell, index) => {
+    const key =
+      INVENTORY_COLUMN_ORDER[index];
+
+    if (!key || key === "actions") {
+      cell.hidden = false;
+      return;
+    }
+
+    cell.hidden = hidden.has(key);
+  });
+
+  table
+    .querySelectorAll("tbody tr")
+    .forEach(row => {
+      if (
+        row.children.length !==
+        INVENTORY_COLUMN_ORDER.length
+      ) {
+        return;
+      }
+
+      [...row.children].forEach(
+        (cell, index) => {
+          const key =
+            INVENTORY_COLUMN_ORDER[index];
+
+          if (!key || key === "actions") {
+            cell.hidden = false;
+            return;
+          }
+
+          cell.hidden = hidden.has(key);
+        }
+      );
+    });
+}
+
+function openColumnVisibility() {
+  const popover =
+    $("columnVisibilityPopover");
+
+  const button =
+    $("columnsBtn");
+
+  if (!popover || !button) return;
+
+  const hidden = new Set(
+    tableState.hiddenColumns || []
+  );
+
+  popover.innerHTML = `
+    <div class="column-filter-title">
+      Columns
+    </div>
+
+    <div class="column-visibility-list">
+      ${Object.entries(
+        INVENTORY_COLUMN_LABELS
+      ).map(([key, label]) => `
+        <label class="column-visibility-option">
+          <input
+            type="checkbox"
+            value="${key}"
+            ${hidden.has(key) ? "" : "checked"}
+          />
+          ${label}
+        </label>
+      `).join("")}
+    </div>
+
+    <div class="column-filter-actions">
+      <button
+        type="button"
+        id="applyColumnsBtn"
+      >
+        Apply
+      </button>
+
+      <button
+        type="button"
+        id="showAllColumnsBtn"
+      >
+        Show All
+      </button>
+    </div>
+  `;
+
+  popover.hidden = false;
+
+  const rect =
+    button.getBoundingClientRect();
+
+  const popoverWidth = 280;
+
+  const left = Math.min(
+    rect.left,
+    window.innerWidth -
+      popoverWidth -
+      12
+  );
+
+  popover.style.left =
+    `${Math.max(12, left)}px`;
+
+  popover.style.top =
+    `${rect.bottom + 6}px`;
+
+  $("applyColumnsBtn")
+    .addEventListener(
+      "click",
+      applyColumnSelection
+    );
+
+  $("showAllColumnsBtn")
+    .addEventListener(
+      "click",
+      showAllColumns
+    );
+}
+
+function applyColumnSelection() {
+  const checked = new Set(
+    [...document.querySelectorAll(
+      "#columnVisibilityPopover input[type='checkbox']:checked"
+    )].map(input => input.value)
+  );
+
+  tableState.hiddenColumns =
+    Object.keys(
+      INVENTORY_COLUMN_LABELS
+    ).filter(
+      key => !checked.has(key)
+    );
+
+  saveTableState();
+
+  closeColumnVisibility();
+  applyColumnVisibility();
+}
+
+function showAllColumns() {
+  tableState.hiddenColumns = [];
+
+  saveTableState();
+
+  closeColumnVisibility();
+  applyColumnVisibility();
+}
+
+function closeColumnVisibility() {
+  const popover =
+    $("columnVisibilityPopover");
+
+  if (!popover) return;
+
+  popover.hidden = true;
+  popover.innerHTML = "";
+}
 
 function sortInventoryBy(columnKey) {
   if (!TABLE_COLUMNS[columnKey]) return;
@@ -1603,10 +1855,15 @@ function closeColumnFilter() {
 }
 
 function resetInventoryFilters() {
+  const hiddenColumns = [
+    ...(tableState.hiddenColumns || [])
+  ];
+
   tableState = {
     sortKey: "dex",
     sortDir: "asc",
-    filters: {}
+    filters: {},
+    hiddenColumns
   };
 
   saveTableState();
@@ -1663,6 +1920,25 @@ function initializeInventoryHeaders() {
       }
 
       closeColumnFilter();
+    }
+  );
+
+  document.addEventListener(
+    "click",
+    event => {
+      const popover =
+        $("columnVisibilityPopover");
+  
+      if (
+        !popover ||
+        popover.hidden ||
+        popover.contains(event.target) ||
+        event.target.closest("#columnsBtn")
+      ) {
+        return;
+      }
+  
+      closeColumnVisibility();
     }
   );
 
@@ -1782,6 +2058,8 @@ function filteredCards() {
       card.sourceCategory,
       card.sourceSuffix,
       card.condition,
+      card.purchasedFrom,
+      card.purchasedOn,
       card.status,
       card.storage,
       card.notes,
@@ -1877,6 +2155,8 @@ function render() {
         <td>${esc(card.condition)}</td>
         <td>${Number(card.quantity || 0)}</td>
         <td>$${Number(card.basis || 0).toFixed(2)}</td>
+        <td>${esc(card.purchasedFrom || "")}</td>
+        <td>${esc(card.purchasedOn || "")}</td>
         <td>${esc(card.status)}</td>
         <td>${esc(card.storage)}</td>
         <td class="row-actions">
@@ -1921,7 +2201,9 @@ function render() {
 
   $("inactiveCount").textContent =
     inactive.length.toLocaleString();
-}
+  
+  applyColumnVisibility();
+  }
 
 function download(name, content, type) {
   const blob = new Blob([content], { type });
@@ -1971,6 +2253,8 @@ $("exportCsvBtn").addEventListener("click", () => {
     "condition",
     "quantity",
     "basis",
+    "purchasedFrom",
+    "purchasedOn",
     "status",
     "storage",
     "notes",
@@ -2045,6 +2329,8 @@ $("language").value = savedDefaults.language || "English";
 $("status").value = savedDefaults.status || "Legacy Inventory";
 $("storage").value = savedDefaults.storage || "";
 $("basis").value = savedDefaults.basis || "0.00";
+$("purchasedFrom").value = savedDefaults.purchasedFrom || "";
+$("purchasedOn").value = savedDefaults.purchasedOn || "";
 
 if ($("setId").value) {
   selectImportedSet($("setId").value);
