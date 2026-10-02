@@ -2763,6 +2763,292 @@ function esc(value) {
   );
 }
 
+let marketLookupCloseTimer = null;
+
+function marketLookupCardFromTrigger(trigger) {
+  return {
+    name:
+      trigger.dataset.name || "",
+    setName:
+      trigger.dataset.setName || "",
+    cardNumber:
+      trigger.dataset.cardNumber || "",
+    variant:
+      trigger.dataset.variant || ""
+  };
+}
+
+function positionMarketLookupPopover(
+  trigger,
+  popover
+) {
+  const rect =
+    trigger.getBoundingClientRect();
+
+  const gap = 8;
+  const viewportPadding = 12;
+  const popoverWidth =
+    popover.offsetWidth || 170;
+  const popoverHeight =
+    popover.offsetHeight || 140;
+
+  const centeredLeft =
+    rect.left +
+    rect.width / 2 -
+    popoverWidth / 2;
+
+  const left = Math.max(
+    viewportPadding,
+    Math.min(
+      centeredLeft,
+      window.innerWidth -
+        popoverWidth -
+        viewportPadding
+    )
+  );
+
+  const spaceBelow =
+    window.innerHeight -
+    rect.bottom -
+    viewportPadding;
+
+  const spaceAbove =
+    rect.top -
+    viewportPadding;
+
+  let top;
+
+  if (
+    spaceBelow >= popoverHeight + gap ||
+    spaceBelow >= spaceAbove
+  ) {
+    top = Math.min(
+      rect.bottom + gap,
+      window.innerHeight -
+        popoverHeight -
+        viewportPadding
+    );
+  } else {
+    top = Math.max(
+      viewportPadding,
+      rect.top -
+        popoverHeight -
+        gap
+    );
+  }
+
+  popover.style.left = `${left}px`;
+  popover.style.top = `${top}px`;
+}
+
+function openMarketLookupPopover(
+  trigger
+) {
+  const popover =
+    $("marketLookupPopover");
+
+  if (!popover) return;
+
+  clearTimeout(
+    marketLookupCloseTimer
+  );
+
+  const card =
+    marketLookupCardFromTrigger(
+      trigger
+    );
+
+  popover.innerHTML = `
+    <div class="market-search-title">
+      💰 Market Lookup
+    </div>
+
+    <a
+      href="${esc(
+        tcgPlayerSearchUrl(card)
+      )}"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      TCGPlayer
+    </a>
+
+    <a
+      href="${esc(
+        priceChartingSearchUrl(card)
+      )}"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      PriceCharting
+    </a>
+
+    <a
+      href="${esc(
+        ebaySoldSearchUrl(card)
+      )}"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      eBay Sold
+    </a>
+  `;
+
+  popover.hidden = false;
+  positionMarketLookupPopover(
+    trigger,
+    popover
+  );
+}
+
+function closeMarketLookupPopover() {
+  const popover =
+    $("marketLookupPopover");
+
+  if (!popover) return;
+
+  popover.hidden = true;
+  popover.innerHTML = "";
+}
+
+function scheduleCloseMarketLookupPopover() {
+  clearTimeout(
+    marketLookupCloseTimer
+  );
+
+  marketLookupCloseTimer =
+    setTimeout(
+      closeMarketLookupPopover,
+      120
+    );
+}
+
+function initializeMarketLookupPopover() {
+  const popover =
+    $("marketLookupPopover");
+
+  if (!popover) return;
+
+  document.addEventListener(
+    "mouseover",
+    event => {
+      const trigger =
+        event.target.closest(
+          ".market-search-trigger"
+        );
+
+      if (!trigger) return;
+
+      openMarketLookupPopover(
+        trigger
+      );
+    }
+  );
+
+  document.addEventListener(
+    "mouseout",
+    event => {
+      const trigger =
+        event.target.closest(
+          ".market-search-trigger"
+        );
+
+      if (
+        !trigger ||
+        popover.contains(
+          event.relatedTarget
+        )
+      ) {
+        return;
+      }
+
+      scheduleCloseMarketLookupPopover();
+    }
+  );
+
+  document.addEventListener(
+    "focusin",
+    event => {
+      const trigger =
+        event.target.closest(
+          ".market-search-trigger"
+        );
+
+      if (!trigger) return;
+
+      openMarketLookupPopover(
+        trigger
+      );
+    }
+  );
+
+  document.addEventListener(
+    "focusout",
+    event => {
+      const trigger =
+        event.target.closest(
+          ".market-search-trigger"
+        );
+
+      if (
+        !trigger ||
+        popover.contains(
+          event.relatedTarget
+        )
+      ) {
+        return;
+      }
+
+      scheduleCloseMarketLookupPopover();
+    }
+  );
+
+  popover.addEventListener(
+    "mouseenter",
+    () => {
+      clearTimeout(
+        marketLookupCloseTimer
+      );
+    }
+  );
+
+  popover.addEventListener(
+    "mouseleave",
+    () => {
+      scheduleCloseMarketLookupPopover();
+    }
+  );
+
+  document.addEventListener(
+    "click",
+    event => {
+      if (
+        event.target.closest(
+          ".market-search-trigger"
+        ) ||
+        popover.contains(
+          event.target
+        )
+      ) {
+        return;
+      }
+
+      closeMarketLookupPopover();
+    }
+  );
+
+  window.addEventListener(
+    "scroll",
+    closeMarketLookupPopover,
+    true
+  );
+
+  window.addEventListener(
+    "resize",
+    closeMarketLookupPopover
+  );
+}
+
 function createInventoryRow(
   card,
   options = {}
@@ -2805,45 +3091,13 @@ function createInventoryRow(
         aria-label="Market lookup for ${esc(
           card.name
         )}"
+        data-name="${esc(card.name)}"
+        data-set-name="${esc(card.setName)}"
+        data-card-number="${esc(card.cardNumber)}"
+        data-variant="${esc(card.variant || "")}"
       >
         ${esc(card.cardNumber)}
       </span>
-    
-      <div class="market-search-menu">
-        <div class="market-search-title">
-          💰 Market Lookup
-        </div>
-    
-        <a
-          href="${esc(
-            tcgPlayerSearchUrl(card)
-          )}"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          TCGPlayer
-        </a>
-    
-        <a
-          href="${esc(
-            priceChartingSearchUrl(card)
-          )}"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          PriceCharting
-        </a>
-    
-        <a
-          href="${esc(
-            ebaySoldSearchUrl(card)
-          )}"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          eBay Sold
-        </a>
-      </div>
     </td>
 
     <td>${esc(card.language)}</td>
@@ -2987,45 +3241,13 @@ function createCondensedRow(group) {
         aria-label="Market lookup for ${esc(
           group.name
         )}"
+        data-name="${esc(group.name)}"
+        data-set-name="${esc(group.setName)}"
+        data-card-number="${esc(group.cardNumber)}"
+        data-variant="${esc(group.variant || "")}"
       >
         ${esc(group.cardNumber)}
       </span>
-    
-      <div class="market-search-menu">
-        <div class="market-search-title">
-          💰 Market Lookup
-        </div>
-    
-        <a
-          href="${esc(
-            tcgPlayerSearchUrl(group)
-          )}"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          TCGPlayer
-        </a>
-    
-        <a
-          href="${esc(
-            priceChartingSearchUrl(group)
-          )}"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          PriceCharting
-        </a>
-    
-        <a
-          href="${esc(
-            ebaySoldSearchUrl(group)
-          )}"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          eBay Sold
-        </a>
-      </div>
     </td>
 
     <td>${esc(group.language)}</td>
@@ -3375,6 +3597,7 @@ populateSetDropdown();
 populateStatusOptions();
 resetPrintingControls();
 initializeInventoryHeaders();
+initializeMarketLookupPopover();
 
 const savedDefaults = loadEntryDefaults();
 
