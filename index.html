@@ -162,15 +162,24 @@
           
           <label>
             Status
-            <select id="status">
-              <option>Legacy Inventory</option>
-              <option>PC</option>
-              <option>Magnet Candidate</option>
-              <option>Toploader Binder</option>
-              <option>Sleeved Bulk</option>
-              <option>General Bulk</option>
-              <option>TCGPlayer Candidate</option>
-            </select>
+            <div class="status-input-row">
+              <input
+                id="status"
+                list="statusOptions"
+                autocomplete="off"
+                placeholder="Type or select status..."
+              />
+          
+              <button
+                id="manageStatusesBtn"
+                type="button"
+                title="Manage statuses"
+              >
+                ⚙
+              </button>
+            </div>
+          
+            <datalist id="statusOptions"></datalist>
           </label>
 
           <label>
@@ -402,6 +411,13 @@
         class="column-visibility-popover"
         hidden
       ></div>
+
+      <div
+        id="statusManagerPopover"
+        class="status-manager-popover"
+        hidden
+      ></div>
+      
     </section>
   </main>
 
