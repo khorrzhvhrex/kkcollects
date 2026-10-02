@@ -2675,7 +2675,7 @@ function compareCardNumbers(a, b) {
   );
 }
 
-function tcgPlayerSearchUrl(card) {
+function marketSearchQuery(card) {
   const parts = [
     card.name,
     card.setName,
@@ -2689,10 +2689,14 @@ function tcgPlayerSearchUrl(card) {
     )
     .filter(Boolean);
 
+  return encodeURIComponent(
+    parts.join(" ")
+  );
+}
+
+function tcgPlayerSearchUrl(card) {
   const query =
-    encodeURIComponent(
-      parts.join(" ")
-    );
+    marketSearchQuery(card);
 
   return (
     "https://www.tcgplayer.com/" +
@@ -2700,6 +2704,31 @@ function tcgPlayerSearchUrl(card) {
     "?productLineName=pokemon" +
     `&q=${query}` +
     "&view=grid"
+  );
+}
+
+function priceChartingSearchUrl(card) {
+  const query =
+    marketSearchQuery(card);
+
+  return (
+    "https://www.pricecharting.com/" +
+    "search-products" +
+    `?q=${query}` +
+    "&type=prices"
+  );
+}
+
+function ebaySoldSearchUrl(card) {
+  const query =
+    marketSearchQuery(card);
+
+  return (
+    "https://www.ebay.com/" +
+    "sch/i.html" +
+    `?_nkw=${query}` +
+    "&LH_Sold=1" +
+    "&LH_Complete=1"
   );
 }
 
@@ -2751,20 +2780,52 @@ function createInventoryRow(
 
     <td>${esc(card.setName)}</td>
 
-    <td class="tcg-search-cell">
-      <a
-        class="tcg-search-link"
-        href="${esc(
-          tcgPlayerSearchUrl(card)
-        )}"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Search TCGPlayer for ${esc(
+    <td class="market-search-cell">
+      <span
+        class="market-search-trigger"
+        tabindex="0"
+        aria-label="Market lookup for ${esc(
           card.name
         )}"
       >
         ${esc(card.cardNumber)}
-      </a>
+      </span>
+    
+      <div class="market-search-menu">
+        <div class="market-search-title">
+          💰 Market Lookup
+        </div>
+    
+        <a
+          href="${esc(
+            tcgPlayerSearchUrl(card)
+          )}"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          TCGPlayer
+        </a>
+    
+        <a
+          href="${esc(
+            priceChartingSearchUrl(card)
+          )}"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          PriceCharting
+        </a>
+    
+        <a
+          href="${esc(
+            ebaySoldSearchUrl(card)
+          )}"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          eBay Sold
+        </a>
+      </div>
     </td>
 
     <td>${esc(card.language)}</td>
@@ -2901,20 +2962,52 @@ function createCondensedRow(group) {
 
     <td>${esc(group.setName)}</td>
 
-    <td class="tcg-search-cell">
-      <a
-        class="tcg-search-link"
-        href="${esc(
-          tcgPlayerSearchUrl(group)
-        )}"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Search TCGPlayer for ${esc(
+    <td class="market-search-cell">
+      <span
+        class="market-search-trigger"
+        tabindex="0"
+        aria-label="Market lookup for ${esc(
           group.name
         )}"
       >
         ${esc(group.cardNumber)}
-      </a>
+      </span>
+    
+      <div class="market-search-menu">
+        <div class="market-search-title">
+          💰 Market Lookup
+        </div>
+    
+        <a
+          href="${esc(
+            tcgPlayerSearchUrl(group)
+          )}"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          TCGPlayer
+        </a>
+    
+        <a
+          href="${esc(
+            priceChartingSearchUrl(group)
+          )}"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          PriceCharting
+        </a>
+    
+        <a
+          href="${esc(
+            ebaySoldSearchUrl(group)
+          )}"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          eBay Sold
+        </a>
+      </div>
     </td>
 
     <td>${esc(group.language)}</td>
