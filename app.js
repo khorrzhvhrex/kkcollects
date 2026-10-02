@@ -2709,7 +2709,17 @@ function tcgPlayerSearchUrl(card) {
 
 function priceChartingSearchUrl(card) {
   const query =
-    marketSearchQuery(card);
+    encodeURIComponent(
+      [
+        card.name,
+        card.setName
+      ]
+        .map(value =>
+          String(value || "").trim()
+        )
+        .filter(Boolean)
+        .join(" ")
+    );
 
   return (
     "https://www.pricecharting.com/" +
