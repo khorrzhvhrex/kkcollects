@@ -142,7 +142,24 @@
               autocomplete="off"
             />
           </label>
-
+          
+          <label>
+            Purchased From
+            <input
+              id="purchasedFrom"
+              autocomplete="off"
+              placeholder="e.g. TCGplayer, Target, eBay"
+            />
+          </label>
+          
+          <label>
+            Purchased On
+            <input
+              id="purchasedOn"
+              type="date"
+            />
+          </label>
+          
           <label>
             Status
             <select id="status">
@@ -205,7 +222,14 @@
           >
             Reset Filters
           </button>
-        
+          
+          <button
+            id="columnsBtn"
+            type="button"
+          >
+            Columns
+          </button>
+          
           <label class="check-label">
             <input id="showInactive" type="checkbox" />
             Show inactive
@@ -324,6 +348,24 @@
                   <button type="button" class="column-filter-button" data-filter="basis" data-label="Basis" title="Filter Basis">⏷</button>
                 </div>
               </th>
+
+              <th>
+                <div class="th-controls">
+                  <button type="button" class="sort-header" data-column="purchasedFrom">
+                    Purchased From <span class="sort-indicator"></span>
+                  </button>
+                  <button type="button" class="column-filter-button" data-filter="purchasedFrom" data-label="Purchased From" title="Filter Purchased From">⏷</button>
+                </div>
+              </th>
+              
+              <th>
+                <div class="th-controls">
+                  <button type="button" class="sort-header" data-column="purchasedOn">
+                    Purchased On <span class="sort-indicator"></span>
+                  </button>
+                  <button type="button" class="column-filter-button" data-filter="purchasedOn" data-label="Purchased On" title="Filter Purchased On">⏷</button>
+                </div>
+              </th>
           
               <th>
                 <div class="th-controls">
@@ -354,11 +396,17 @@
         class="column-filter-popover"
         hidden
       ></div>
+      
+      <div
+        id="columnVisibilityPopover"
+        class="column-visibility-popover"
+        hidden
+      ></div>
     </section>
   </main>
 
   <template id="emptyTemplate">
-    <tr><td colspan="15" class="empty">No matching cards logged yet.</td></tr>
+    <tr><td colspan="17" class="empty">No matching cards logged yet.</td></tr>
   </template>
 
   <script src="app.js?v=20261002-1"></script>
