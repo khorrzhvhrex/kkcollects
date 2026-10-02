@@ -742,7 +742,7 @@ function clearForm() {
   $("quantity").value = 1;
   $("basis").value = "0.00";
   $("language").value = "English";
-  $("condition").value = "Unknown";
+  $("condition").value = "NM";
   $("status").value = "Legacy Inventory";
 
   $("setId").value = "";
@@ -889,7 +889,7 @@ async function editCard(id) {
     specialPrintingKey: card.specialPrintingKey || ""
   });
 
-  $("condition").value = card.condition || "Unknown";
+  $("condition").value = card.condition || "NM";
   $("quantity").value = Number(card.quantity || 0);
   $("basis").value = Number(card.basis || 0).toFixed(2);
   $("status").value = card.status || "Legacy Inventory";
