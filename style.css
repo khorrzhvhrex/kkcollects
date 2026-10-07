@@ -533,7 +533,7 @@ select:disabled {
 }
 
 .sort-indicator {
-  min-width: 9px;
+  min-width: 16px;
   font-size: 8px;
   color: var(--accent-hover);
 }
