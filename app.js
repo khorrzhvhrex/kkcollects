@@ -1490,8 +1490,12 @@ window.restoreCard = restoreCard;
 
 function loadTableState() {
   const fallback = {
-    sortKey: "dex",
-    sortDir: "asc",
+    sorts: [
+      {
+        key: "dex",
+        dir: "asc"
+      }
+    ],
     filters: {},
     hiddenColumns: [],
     viewMode: "detailed"
@@ -1502,13 +1506,48 @@ function loadTableState() {
       localStorage.getItem(TABLE_STATE_KEY)
     );
 
-    return {
-      sortKey: saved?.sortKey || fallback.sortKey,
+    let sorts;
 
-      sortDir:
-        saved?.sortDir === "desc"
-          ? "desc"
-          : "asc",
+    if (
+      Array.isArray(saved?.sorts) &&
+      saved.sorts.length
+    ) {
+      sorts = saved.sorts
+        .filter(sort =>
+          sort &&
+          typeof sort.key === "string"
+        )
+        .map(sort => ({
+          key: sort.key,
+          dir:
+            sort.dir === "desc"
+              ? "desc"
+              : "asc"
+        }));
+    } else if (saved?.sortKey) {
+      /*
+       * Migration from the previous
+       * single-column sort format.
+       */
+      sorts = [
+        {
+          key: saved.sortKey,
+          dir:
+            saved.sortDir === "desc"
+              ? "desc"
+              : "asc"
+        }
+      ];
+    } else {
+      sorts = fallback.sorts;
+    }
+
+    if (!sorts.length) {
+      sorts = fallback.sorts;
+    }
+
+    return {
+      sorts,
 
       filters:
         saved?.filters &&
@@ -1851,18 +1890,87 @@ function closeColumnVisibility() {
 function sortInventoryBy(columnKey) {
   if (!TABLE_COLUMNS[columnKey]) return;
 
-  if (tableState.sortKey === columnKey) {
-    tableState.sortDir =
-      tableState.sortDir === "asc"
+  const existingIndex =
+    tableState.sorts.findIndex(
+      sort =>
+        sort.key === columnKey
+    );
+
+  if (existingIndex === 0) {
+    /*
+     * Clicking the current primary sort
+     * toggles its direction.
+     */
+    tableState.sorts[0].dir =
+      tableState.sorts[0].dir === "asc"
         ? "desc"
         : "asc";
+  } else if (existingIndex > 0) {
+    /*
+     * Clicking an existing secondary sort
+     * promotes it to primary while retaining
+     * its current direction.
+     */
+    const [existingSort] =
+      tableState.sorts.splice(
+        existingIndex,
+        1
+      );
+
+    tableState.sorts.unshift(
+      existingSort
+    );
   } else {
-    tableState.sortKey = columnKey;
-    tableState.sortDir = "asc";
+    /*
+     * A brand-new sort becomes primary.
+     * Existing sorts remain as secondary,
+     * tertiary, etc.
+     */
+    tableState.sorts.unshift({
+      key: columnKey,
+      dir: "asc"
+    });
   }
 
   saveTableState();
   render();
+}
+
+function compareInventoryBySorts(
+  a,
+  b
+) {
+  const sorts =
+    Array.isArray(tableState.sorts) &&
+    tableState.sorts.length
+      ? tableState.sorts
+      : [
+          {
+            key: "dex",
+            dir: "asc"
+          }
+        ];
+
+  for (const sort of sorts) {
+    if (!TABLE_COLUMNS[sort.key]) {
+      continue;
+    }
+
+    const result =
+      compareInventoryValues(
+        a,
+        b,
+        sort.key
+      );
+
+    if (result !== 0) {
+      return sort.dir === "desc"
+        ? -result
+        : result;
+    }
+  }
+
+  return 0;
 }
 
 function compareInventoryValues(
@@ -2192,8 +2300,12 @@ function resetInventoryFilters() {
     tableState.viewMode || "detailed";
 
   tableState = {
-    sortKey: "dex",
-    sortDir: "asc",
+    sorts: [
+      {
+        key: "dex",
+        dir: "asc"
+      }
+    ],
     filters: {},
     hiddenColumns,
     viewMode
@@ -2301,12 +2413,23 @@ function initializeInventoryHeaders() {
   }
 
 function updateInventoryHeaderState() {
+  const sorts =
+    Array.isArray(tableState.sorts)
+      ? tableState.sorts
+      : [];
+
   document
     .querySelectorAll(".sort-header")
     .forEach(button => {
+      const sortIndex =
+        sorts.findIndex(
+          sort =>
+            sort.key ===
+            button.dataset.column
+        );
+
       const active =
-        button.dataset.column ===
-        tableState.sortKey;
+        sortIndex >= 0;
 
       const indicator =
         button.querySelector(
@@ -2319,14 +2442,20 @@ function updateInventoryHeaderState() {
       );
 
       if (indicator) {
-        indicator.textContent =
-          active
-            ? (
-                tableState.sortDir === "asc"
-                  ? "▲"
-                  : "▼"
-              )
-            : "";
+        if (!active) {
+          indicator.textContent = "";
+        } else {
+          const sort =
+            sorts[sortIndex];
+
+          const arrow =
+            sort.dir === "asc"
+              ? "▲"
+              : "▼";
+
+          indicator.textContent =
+            `${arrow}${sortIndex + 1}`;
+        }
       }
     });
 
@@ -2423,18 +2552,9 @@ function filteredCards() {
     );
   });
 
-  list.sort((a, b) => {
-    const result =
-      compareInventoryValues(
-        a,
-        b,
-        tableState.sortKey
-      );
-
-    return tableState.sortDir === "desc"
-      ? -result
-      : result;
-  });
+  list.sort(
+    compareInventoryBySorts
+  );
 
   return list;
 }
@@ -2608,18 +2728,9 @@ function condenseInventoryCards(list) {
       }
     );
 
-  condensed.sort((a, b) => {
-    const result =
-      compareInventoryValues(
-        a,
-        b,
-        tableState.sortKey
-      );
-
-    return tableState.sortDir === "desc"
-      ? -result
-      : result;
-  });
+  condensed.sort(
+    compareInventoryBySorts
+  );
 
   return condensed;
 }
