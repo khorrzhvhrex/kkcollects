@@ -29,6 +29,11 @@ let loadedSetData = null;
 let resolvedSourceCard = null;
 let tableState = loadTableState();
 let activeFilterColumn = null;
+
+let batchDefaults = null;
+let batchSetupReturnToEntry = false;
+let editingExistingCard = false;
+
 const expandedCondensedGroups = new Set();
 
 function formatDexNumber(number) {
@@ -693,9 +698,22 @@ async function resolveCardFromNumber() {
       : "";
   }
 
-  $("cardLookupStatus").textContent = card.name || "Card loaded";
-
-  applySourcePrintingControls();
+  $("cardLookupStatus").textContent =
+    card.name || "Card loaded";
+  
+  const preferredTreatment =
+    !editingExistingCard
+      ? batchDefaults?.variant || ""
+      : "";
+  
+  applySourcePrintingControls(
+    preferredTreatment
+      ? {
+          variant: preferredTreatment
+        }
+      : {}
+  );
+  
   showSourceMeta();
 }
 
@@ -1198,25 +1216,716 @@ function clearForm() {
 const form = $("cardForm");
 const body = $("inventoryBody");
 
-form.addEventListener("submit", event => {
-  event.preventDefault();
+function setBatchBasisValue(value) {
+  const cleaned =
+    String(value || "")
+      .replace(/\D/g, "");
 
-  if (!validateForm()) return;
+  $("batchBasis").value =
+    cleaned
+      ? (
+          Number(cleaned) / 100
+        ).toFixed(2)
+      : "";
+}
+
+function clearBatchSetupForm() {
+  $("batchSetupForm").reset();
+
+  $("batchSetSearch").value = "";
+  $("batchManualSetName").value = "";
+  $("batchManualSetLabel").hidden = true;
+
+  $("batchLanguage").value = "";
+  $("batchCondition").value = "";
+  $("batchVariant").value = "";
+  $("batchBasis").value = "";
+  $("batchPurchasedFrom").value = "";
+  $("batchPurchasedOn").value = "";
+  $("batchStatus").value = "";
+  $("batchStorage").value = "";
+}
+
+function populateBatchSetupForm() {
+  clearBatchSetupForm();
+
+  if (!batchDefaults) {
+    return;
+  }
+
+  $("batchSetSearch").value =
+    batchDefaults.setLabel || "";
+
+  $("batchManualSetName").value =
+    batchDefaults.setId
+      ? ""
+      : batchDefaults.setName || "";
+
+  $("batchManualSetLabel").hidden =
+    Boolean(batchDefaults.setId);
+
+  $("batchLanguage").value =
+    batchDefaults.language || "";
+
+  $("batchCondition").value =
+    batchDefaults.condition || "";
+
+  $("batchVariant").value =
+    batchDefaults.variant || "";
+
+  $("batchBasis").value =
+    batchDefaults.basis || "";
+
+  $("batchPurchasedFrom").value =
+    batchDefaults.purchasedFrom || "";
+
+  $("batchPurchasedOn").value =
+    batchDefaults.purchasedOn || "";
+
+  $("batchStatus").value =
+    batchDefaults.status || "";
+
+  $("batchStorage").value =
+    batchDefaults.storage || "";
+}
+
+function openBatchSetup({
+  returnToEntry = false
+} = {}) {
+  batchSetupReturnToEntry =
+    returnToEntry;
+
+  if (returnToEntry) {
+    populateBatchSetupForm();
+    $("cardEntryModal").hidden = true;
+  } else {
+    batchDefaults = null;
+    clearBatchSetupForm();
+  }
+
+  $("batchSetupModal").hidden = false;
+
+  setTimeout(
+    () => {
+      $("batchSetSearch").focus();
+    },
+    0
+  );
+}
+
+function cancelBatchSetup() {
+  $("batchSetupModal").hidden = true;
+
+  if (
+    batchSetupReturnToEntry &&
+    batchDefaults
+  ) {
+    $("cardEntryModal").hidden = false;
+
+    setTimeout(
+      () => {
+        $("cardNumber").focus();
+      },
+      0
+    );
+  }
+
+  batchSetupReturnToEntry = false;
+}
+
+function selectedBatchSetOption() {
+  return findSetOptionFromSearch(
+    $("batchSetSearch").value
+  );
+}
+
+function updateBatchManualSetVisibility() {
+  const option =
+    selectedBatchSetOption();
+
+  $("batchManualSetLabel").hidden =
+    !option ||
+    Boolean(option.value);
+
+  if (
+    option &&
+    option.value
+  ) {
+    $("batchManualSetName").value = "";
+  }
+}
+
+function captureBatchDefaults() {
+  const option =
+    selectedBatchSetOption();
+
+  if (!option) {
+    alert(
+      "Select a valid set from the set list."
+    );
+
+    $("batchSetSearch").focus();
+
+    return null;
+  }
+
+  const setId =
+    option.value || "";
+
+  const manualSetName =
+    $("batchManualSetName")
+      .value
+      .trim();
+
+  if (
+    !setId &&
+    !manualSetName
+  ) {
+    alert(
+      "Enter a Set / Promo Group for the manual entry."
+    );
+
+    $("batchManualSetName").focus();
+
+    return null;
+  }
+
+  const setName =
+    setId
+      ? (
+          option.dataset.name ||
+          option.textContent ||
+          ""
+        )
+      : manualSetName;
+
+  const setLabel =
+    setId
+      ? (
+          option.dataset.displayLabel ||
+          option.dataset.name ||
+          option.textContent ||
+          ""
+        )
+      : manualSetName;
+
+  return {
+    setId,
+    setName,
+    setLabel,
+
+    language:
+      $("batchLanguage").value,
+
+    condition:
+      $("batchCondition").value,
+
+    variant:
+      $("batchVariant").value,
+
+    basis:
+      $("batchBasis")
+        .value
+        .trim(),
+
+    purchasedFrom:
+      $("batchPurchasedFrom")
+        .value
+        .trim(),
+
+    purchasedOn:
+      $("batchPurchasedOn").value,
+
+    status:
+      $("batchStatus")
+        .value
+        .trim(),
+
+    storage:
+      $("batchStorage")
+        .value
+        .trim()
+  };
+}
+
+function batchDisplayValue(
+  value,
+  fallback = "—"
+) {
+  const text =
+    String(value || "").trim();
+
+  return text || fallback;
+}
+
+function renderBatchDefaultsDisplay() {
+  if (!batchDefaults) {
+    $("batchDefaultsDisplay")
+      .innerHTML = "";
+
+    return;
+  }
+
+  const basis =
+    batchDefaults.basis
+      ? `$${Number(
+          batchDefaults.basis
+        ).toFixed(2)}`
+      : "—";
+
+  const items = [
+    [
+      "Set",
+      batchDefaults.setName
+    ],
+    [
+      "Language",
+      batchDefaults.language
+    ],
+    [
+      "Condition",
+      batchDefaults.condition
+    ],
+    [
+      "Treatment",
+      batchDefaults.variant
+    ],
+    [
+      "Basis",
+      basis
+    ],
+    [
+      "Purchased From",
+      batchDefaults.purchasedFrom
+    ],
+    [
+      "Purchase Date",
+      batchDefaults.purchasedOn
+    ],
+    [
+      "Status",
+      batchDefaults.status
+    ],
+    [
+      "Storage",
+      batchDefaults.storage
+    ]
+  ];
+
+  $("batchDefaultsDisplay")
+    .innerHTML =
+      items
+        .map(
+          ([label, value]) => `
+            <span class="batch-default-chip">
+              <strong>
+                ${esc(label)}:
+              </strong>
+
+              ${esc(
+                batchDisplayValue(value)
+              )}
+            </span>
+          `
+        )
+        .join("");
+}
+
+async function applyBatchSetToForm() {
+  if (!batchDefaults) return;
+
+  $("setId").value =
+    batchDefaults.setId || "";
+
+  if (batchDefaults.setId) {
+    const option =
+      $("setId").selectedOptions[0];
+
+    $("setSearch").value =
+      option?.dataset
+        ?.displayLabel ||
+      option?.dataset
+        ?.name ||
+      batchDefaults.setLabel ||
+      "";
+
+    await selectImportedSet(
+      batchDefaults.setId
+    );
+
+    $("setName").value =
+      batchDefaults.setName;
+
+    $("setName").readOnly = true;
+
+    $("manualSetLabel")
+      .classList
+      .add("muted-field");
+  } else {
+    $("setSearch").value =
+      "Manual / Promo Entry";
+
+    await selectImportedSet("");
+
+    $("setName").value =
+      batchDefaults.setName;
+
+    $("setName").readOnly = false;
+
+    $("manualSetLabel")
+      .classList
+      .remove("muted-field");
+  }
+}
+
+async function resetEntryToBatchDefaults() {
+  if (!batchDefaults) return;
+
+  resolvedSourceCard = null;
+
+  $("editId").value = "";
+
+  $("cardNumber").value = "";
+  $("name").value = "";
+  $("dex").value = "";
+
+  $("quantity").value = 1;
+
+  $("language").value =
+    batchDefaults.language ||
+    "English";
+
+  $("condition").value =
+    batchDefaults.condition ||
+    "NM";
+
+  $("basis").value =
+    batchDefaults.basis
+      ? Number(
+          batchDefaults.basis
+        ).toFixed(2)
+      : "0.00";
+
+  $("purchasedFrom").value =
+    batchDefaults.purchasedFrom ||
+    "";
+
+  $("purchasedOn").value =
+    batchDefaults.purchasedOn ||
+    "";
+
+  $("status").value =
+    batchDefaults.status ||
+    "";
+
+  $("storage").value =
+    batchDefaults.storage ||
+    "";
+
+  $("notes").value = "";
+
+  $("cardLookupStatus")
+    .textContent = "";
+
+  $("otherVariantWarning")
+    .hidden = true;
+
+  resetPrintingControls();
+
+  if (
+    batchDefaults.variant &&
+    [
+      ...$("variant").options
+    ].some(
+      option =>
+        option.value ===
+        batchDefaults.variant
+    )
+  ) {
+    $("variant").value =
+      batchDefaults.variant;
+  }
+
+  hideSourceMeta();
+
+  await applyBatchSetToForm();
+
+  form
+    .querySelector(
+      'button[type="submit"]'
+    )
+    .textContent =
+      "Add Card(s)";
+
+  $("cardEntryTitle")
+    .textContent =
+      "Add Cards";
+
+  $("cardEntrySetSummary")
+    .textContent =
+      batchDefaults.setName;
+
+  $("editBatchDefaultsBtn")
+    .hidden = false;
+
+  $("completeBatchBtn")
+    .hidden = false;
+
+  renderBatchDefaultsDisplay();
+
+  setTimeout(
+    () => {
+      $("cardNumber").focus();
+    },
+    0
+  );
+}
+
+async function openCardEntryForBatch() {
+  editingExistingCard = false;
+
+  $("batchSetupModal").hidden = true;
+  $("cardEntryModal").hidden = false;
+
+  await resetEntryToBatchDefaults();
+}
+
+function closeCardEntryModal() {
+  $("cardEntryModal").hidden = true;
+
+  closeStatusManager();
+}
+
+async function completeCurrentBatch() {
+  closeCardEntryModal();
+
+  batchDefaults = null;
+  batchSetupReturnToEntry = false;
+  editingExistingCard = false;
+
+  resolvedSourceCard = null;
+
+  $("editId").value = "";
+
+  $("setId").value = "";
+  $("setSearch").value =
+    "Manual / Promo Entry";
+
+  $("setName").value = "";
+  $("setName").readOnly = false;
+
+  $("cardNumber").value = "";
+  $("name").value = "";
+  $("dex").value = "";
+
+  $("quantity").value = 1;
+  $("notes").value = "";
+
+  resetPrintingControls();
+  hideSourceMeta();
+
+  $("cardLookupStatus")
+    .textContent = "";
+
+  $("otherVariantWarning")
+    .hidden = true;
+
+  clearBatchSetupForm();
+}
+
+async function submitCurrentCard() {
+  if (
+    !$("cardNumber")
+      .value
+      .trim()
+  ) {
+    $("cardNumber").focus();
+    return false;
+  }
+
+  /*
+   * Resolve on submit as well as blur.
+   * This allows Enter directly from Card #
+   * to perform lookup and save in one action.
+   */
+  if (
+    $("setId").value &&
+    $("cardNumber").value.trim()
+  ) {
+    await resolveCardFromNumber();
+  }
+
+  if (
+    !$("name")
+      .value
+      .trim()
+  ) {
+    alert(
+      "The card could not be identified. Check the card number or enter the card name manually."
+    );
+
+    $("cardNumber").focus();
+
+    return false;
+  }
+
+  if (!validateForm()) {
+    return false;
+  }
 
   ensureStatusOption(
     $("status").value
   );
-  
-  const card = formData();
-  const index = cards.findIndex(existing => existing.id === card.id);
 
-  if (index >= 0) cards[index] = card;
-  else cards.push(card);
+  const card = formData();
+
+  const index =
+    cards.findIndex(
+      existing =>
+        existing.id === card.id
+    );
+
+  if (index >= 0) {
+    cards[index] = card;
+  } else {
+    cards.push(card);
+  }
 
   saveCards();
   render();
-  clearForm();
-});
+
+  return true;
+}
+
+form.addEventListener(
+  "submit",
+  async event => {
+    event.preventDefault();
+
+    const wasEditing =
+      editingExistingCard;
+
+    const saved =
+      await submitCurrentCard();
+
+    if (!saved) return;
+
+    if (wasEditing) {
+      editingExistingCard = false;
+
+      closeCardEntryModal();
+
+      $("editId").value = "";
+
+      return;
+    }
+
+    await resetEntryToBatchDefaults();
+  }
+);
+
+$("openAddInventoryBtn")
+  .addEventListener(
+    "click",
+    () => {
+      openBatchSetup();
+    }
+  );
+
+$("cancelBatchSetupBtn")
+  .addEventListener(
+    "click",
+    cancelBatchSetup
+  );
+
+$("batchSetupForm")
+  .addEventListener(
+    "submit",
+    async event => {
+      event.preventDefault();
+
+      const captured =
+        captureBatchDefaults();
+
+      if (!captured) return;
+
+      batchDefaults =
+        captured;
+
+      if (batchDefaults.status) {
+        ensureStatusOption(
+          batchDefaults.status
+        );
+      }
+
+      batchSetupReturnToEntry =
+        false;
+
+      await openCardEntryForBatch();
+    }
+  );
+
+$("editBatchDefaultsBtn")
+  .addEventListener(
+    "click",
+    () => {
+      openBatchSetup({
+        returnToEntry: true
+      });
+    }
+  );
+
+$("completeBatchBtn")
+  .addEventListener(
+    "click",
+    completeCurrentBatch
+  );
+
+$("batchSetSearch")
+  .addEventListener(
+    "change",
+    updateBatchManualSetVisibility
+  );
+
+$("batchSetSearch")
+  .addEventListener(
+    "input",
+    updateBatchManualSetVisibility
+  );
+
+$("batchBasis")
+  .addEventListener(
+    "focus",
+    () => {
+      if (
+        $("batchBasis").value ===
+        "0.00"
+      ) {
+        $("batchBasis").value = "";
+      }
+    }
+  );
+
+$("batchBasis")
+  .addEventListener(
+    "input",
+    () => {
+      const digits =
+        $("batchBasis")
+          .value
+          .replace(/\D/g, "");
+
+      if (!digits) {
+        $("batchBasis").value = "";
+        return;
+      }
+
+      $("batchBasis").value =
+        (
+          Number(digits) / 100
+        ).toFixed(2);
+    }
+  );
 
 $("clearBtn").addEventListener("click", clearForm);
 $("search").addEventListener("input", render);
@@ -1379,12 +2088,30 @@ $("cardNumber").addEventListener("blur", () => {
   resolveCardFromNumber();
 });
 
-$("cardNumber").addEventListener("keydown", event => {
-  if (event.key === "Enter") {
+form.addEventListener(
+  "keydown",
+  event => {
+    if (
+      event.key !== "Enter" ||
+      event.shiftKey ||
+      event.isComposing
+    ) {
+      return;
+    }
+
+    if (
+      event.target.closest(
+        "button"
+      )
+    ) {
+      return;
+    }
+
     event.preventDefault();
-    resolveCardFromNumber();
+
+    form.requestSubmit();
   }
-});
+);
 
 async function editCard(id) {
   const card = cards.find(candidate => candidate.id === id);
