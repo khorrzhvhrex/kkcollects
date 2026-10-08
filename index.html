@@ -22,188 +22,14 @@
   </header>
 
   <main>
-    <section class="panel form-panel">
-      <h2>Log Card</h2>
-      <form id="cardForm">
-        <input type="hidden" id="editId" />
-
-        <div class="grid">
-          <label>
-            Imported Set
-            <input
-              id="setSearch"
-              list="setOptions"
-              autocomplete="off"
-              placeholder="Type set name..."
-            />
-          
-            <datalist id="setOptions"></datalist>
-          
-            <select id="setId" hidden aria-hidden="true" tabindex="-1">
-              <option value="">Manual / Promo Entry</option>
-            </select>
-          </label>
-
-          <label id="manualSetLabel">
-            Set / Promo Group
-            <input id="setName" autocomplete="off" placeholder="fills w/set selection" />
-          </label>
-
-          <label>
-            Card #
-            <input id="cardNumber" autocomplete="off" placeholder="e.g. 83/82 or SWSH020" />
-            <small id="cardLookupStatus" class="field-status"></small>
-          </label>
-
-          <label>
-            Pokémon / Card Name
-            <input id="name" required autocomplete="off" placeholder="fills w/card # entry" />
-          </label>
-
-          <label>
-            National Dex #
-            <input id="dex" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="fills" />
-          </label>
-
-          <label>
-            Language
-            <select id="language">
-              <option>English</option>
-              <option>French</option>
-              <option>Japanese</option>
-              <option>Spanish</option>
-              <option>German</option>
-              <option>Italian</option>
-              <option>Portuguese</option>
-              <option>Korean</option>
-              <option>Chinese</option>
-              <option>Other</option>
-            </select>
-          </label>
-
-          <label>
-            Size
-            <select id="size">
-              <option>Standard</option>
-              <option>Oversized</option>
-            </select>
-          </label>
-
-          <label>
-            Treatment
-            <select id="variant">
-              <option>Standard</option>
-              <option>Holo</option>
-              <option>Reverse Holo</option>
-              <option>Cosmos Holo</option>
-              <option>Other</option>
-            </select>
-          </label>
-
-          <label id="editionField" hidden>
-            Edition
-            <select id="edition">
-              <option>Unlimited</option>
-              <option>1st Edition</option>
-            </select>
-          </label>
-
-          <label id="specialPrintingField" class="wide" hidden>
-            Special Printing
-            <select id="specialPrinting"></select>
-            <small id="specialPrintingStatus" class="field-status"></small>
-          </label>
-
-          <label>
-            Condition
-            <select id="condition">
-              <option>NM</option>
-              <option>LP</option>
-              <option>MP</option>
-              <option>HP</option>
-              <option>Damaged</option>
-              <option>Unknown</option>
-            </select>
-          </label>
-
-          <label>
-            Quantity
-            <input id="quantity" type="number" min="0" value="1" required />
-            <small class="field-status">0 retains the record as inactive.</small>
-          </label>
-
-          <label>
-            Basis / Card
-            <input
-              id="basis"
-              type="text"
-              inputmode="numeric"
-              value="0.00"
-              autocomplete="off"
-            />
-          </label>
-          
-          <label>
-            Purchased From
-            <input
-              id="purchasedFrom"
-              autocomplete="off"
-              placeholder="e.g. TCGplayer, Target, eBay"
-            />
-          </label>
-          
-          <label>
-            Purchased On
-            <input
-              id="purchasedOn"
-              type="date"
-            />
-          </label>
-          
-          <label>
-            Status
-            <div class="status-input-row">
-              <input
-                id="status"
-                list="statusOptions"
-                autocomplete="off"
-                placeholder="Type or select status..."
-              />
-          
-              <button
-                id="manageStatusesBtn"
-                type="button"
-                title="Manage statuses"
-              >
-                ⚙
-              </button>
-            </div>
-          
-            <datalist id="statusOptions"></datalist>
-          </label>
-
-          <label>
-            Storage Location
-            <input id="storage" autocomplete="off" placeholder="e.g. Bulk Box 1 / Row 2" />
-          </label>
-
-          <label class="wide">
-            Notes
-            <input id="notes" autocomplete="off" placeholder="Required when Treatment = Other; Poke/Master ball reverse" />
-          </label>
-        </div>
-
-        <div id="sourceCardMeta" class="source-meta" hidden></div>
-
-        <div id="otherVariantWarning" class="inline-warning" hidden>
-          “Other” treatment requires a note describing the physical printing.
-        </div>
-
-        <div class="form-actions">
-          <button type="submit" class="primary">Add Card</button>
-          <button type="button" id="clearBtn">Clear</button>
-        </div>
-      </form>
+    <section class="panel add-inventory-panel">
+      <button
+        id="openAddInventoryBtn"
+        type="button"
+        class="primary add-inventory-button"
+      >
+        Add Card(s) to Inventory
+      </button>
     </section>
 
     <section class="panel stats">
@@ -445,9 +271,516 @@
       ></div>
       
     </section>
-  </main>
+    </main>
 
-  <template id="emptyTemplate">
+    <!-- =====================================================
+         Add Inventory — Step 1: Batch Defaults
+         ===================================================== -->
+  
+    <div
+      id="batchSetupModal"
+      class="modal-backdrop"
+      hidden
+    >
+      <section
+        class="inventory-modal batch-setup-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="batchSetupTitle"
+      >
+        <div class="modal-header">
+          <div>
+            <h2 id="batchSetupTitle">
+              Add Card(s) to Inventory
+            </h2>
+  
+            <p>
+              Select the set and establish any defaults
+              for this batch.
+            </p>
+          </div>
+        </div>
+  
+        <form id="batchSetupForm">
+          <div class="modal-grid">
+            <label class="modal-wide-field">
+              Select Set
+              <span class="required-tag">Required</span>
+  
+              <input
+                id="batchSetSearch"
+                list="setOptions"
+                autocomplete="off"
+                placeholder="Type set name..."
+                required
+              />
+            </label>
+  
+            <label
+              id="batchManualSetLabel"
+              class="modal-wide-field"
+              hidden
+            >
+              Set / Promo Group
+              <span class="required-tag">Required</span>
+  
+              <input
+                id="batchManualSetName"
+                autocomplete="off"
+                placeholder="Enter manual set or promo group..."
+              />
+            </label>
+  
+            <label>
+              Language
+              <span class="optional-tag">Optional</span>
+  
+              <select id="batchLanguage">
+                <option value="">No batch default</option>
+                <option>English</option>
+                <option>French</option>
+                <option>Japanese</option>
+                <option>Spanish</option>
+                <option>German</option>
+                <option>Italian</option>
+                <option>Portuguese</option>
+                <option>Korean</option>
+                <option>Chinese</option>
+                <option>Other</option>
+              </select>
+            </label>
+  
+            <label>
+              Default Condition
+              <span class="optional-tag">Optional</span>
+  
+              <select id="batchCondition">
+                <option value="">No batch default</option>
+                <option>NM</option>
+                <option>LP</option>
+                <option>MP</option>
+                <option>HP</option>
+                <option>Damaged</option>
+                <option>Unknown</option>
+              </select>
+            </label>
+  
+            <label>
+              Default Treatment
+              <span class="optional-tag">Optional</span>
+  
+              <select id="batchVariant">
+                <option value="">Use card default</option>
+                <option>Standard</option>
+                <option>Holo</option>
+                <option>Reverse Holo</option>
+                <option>Cosmos Holo</option>
+                <option>Other</option>
+              </select>
+            </label>
+  
+            <label>
+              Default Basis / Card
+              <span class="optional-tag">Optional</span>
+  
+              <input
+                id="batchBasis"
+                type="text"
+                inputmode="numeric"
+                autocomplete="off"
+                placeholder="0.00"
+              />
+            </label>
+  
+            <label>
+              Purchased From
+              <span class="optional-tag">Optional</span>
+  
+              <input
+                id="batchPurchasedFrom"
+                autocomplete="off"
+                placeholder="e.g. TCGplayer, Target, eBay"
+              />
+            </label>
+  
+            <label>
+              Purchase Date
+              <span class="optional-tag">Optional</span>
+  
+              <input
+                id="batchPurchasedOn"
+                type="date"
+              />
+            </label>
+  
+            <label>
+              Default Status
+              <span class="optional-tag">Optional</span>
+  
+              <input
+                id="batchStatus"
+                list="statusOptions"
+                autocomplete="off"
+                placeholder="Type or select status..."
+              />
+            </label>
+  
+            <label>
+              Storage Location
+              <span class="optional-tag">Optional</span>
+  
+              <input
+                id="batchStorage"
+                autocomplete="off"
+                placeholder="e.g. Bulk Box 1 / Row 2"
+              />
+            </label>
+          </div>
+  
+          <div class="modal-actions">
+            <button
+              type="submit"
+              class="primary"
+            >
+              Continue
+            </button>
+  
+            <button
+              id="cancelBatchSetupBtn"
+              type="button"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  
+  
+    <!-- =====================================================
+         Add Inventory — Step 2: Rapid Card Entry
+         ===================================================== -->
+  
+    <div
+      id="cardEntryModal"
+      class="modal-backdrop"
+      hidden
+    >
+      <section
+        class="inventory-modal card-entry-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cardEntryTitle"
+      >
+        <div class="modal-header card-entry-header">
+          <div>
+            <h2 id="cardEntryTitle">
+              Add Cards
+            </h2>
+  
+            <p id="cardEntrySetSummary">
+              Current set
+            </p>
+          </div>
+  
+          <button
+            id="editBatchDefaultsBtn"
+            type="button"
+          >
+            Edit Batch Defaults
+          </button>
+        </div>
+  
+        <form id="cardForm">
+          <input
+            type="hidden"
+            id="editId"
+          />
+  
+          <!--
+            These existing controls remain in the DOM because
+            the card-data lookup code uses them internally.
+          -->
+  
+          <div class="internal-card-controls">
+            <input
+              id="setSearch"
+              list="setOptions"
+              autocomplete="off"
+            />
+  
+            <datalist id="setOptions"></datalist>
+  
+            <select
+              id="setId"
+              aria-hidden="true"
+              tabindex="-1"
+            >
+              <option value="">
+                Manual / Promo Entry
+              </option>
+            </select>
+  
+            <label id="manualSetLabel">
+              Set / Promo Group
+  
+              <input
+                id="setName"
+                autocomplete="off"
+              />
+            </label>
+          </div>
+  
+          <div
+            id="batchDefaultsDisplay"
+            class="batch-defaults-display"
+          ></div>
+  
+          <div class="card-entry-grid">
+  
+            <label class="card-entry-primary">
+              Card #
+              <input
+                id="cardNumber"
+                autocomplete="off"
+                placeholder="e.g. 83/82 or SWSH020"
+              />
+  
+              <small
+                id="cardLookupStatus"
+                class="field-status"
+              ></small>
+            </label>
+  
+            <label class="card-entry-primary">
+              Quantity
+              <input
+                id="quantity"
+                type="number"
+                min="1"
+                value="1"
+                required
+              />
+            </label>
+  
+            <label>
+              Pokémon / Card Name
+  
+              <input
+                id="name"
+                required
+                autocomplete="off"
+                placeholder="fills from Card #"
+              />
+            </label>
+  
+            <label>
+              National Dex #
+  
+              <input
+                id="dex"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="4"
+                placeholder="fills"
+              />
+            </label>
+  
+            <label>
+              Language
+  
+              <select id="language">
+                <option>English</option>
+                <option>French</option>
+                <option>Japanese</option>
+                <option>Spanish</option>
+                <option>German</option>
+                <option>Italian</option>
+                <option>Portuguese</option>
+                <option>Korean</option>
+                <option>Chinese</option>
+                <option>Other</option>
+              </select>
+            </label>
+  
+            <label>
+              Condition
+  
+              <select id="condition">
+                <option>NM</option>
+                <option>LP</option>
+                <option>MP</option>
+                <option>HP</option>
+                <option>Damaged</option>
+                <option>Unknown</option>
+              </select>
+            </label>
+  
+            <label>
+              Treatment
+  
+              <select id="variant">
+                <option>Standard</option>
+                <option>Holo</option>
+                <option>Reverse Holo</option>
+                <option>Cosmos Holo</option>
+                <option>Other</option>
+              </select>
+            </label>
+  
+            <label>
+              Size
+  
+              <select id="size">
+                <option>Standard</option>
+                <option>Oversized</option>
+              </select>
+            </label>
+  
+            <label id="editionField" hidden>
+              Edition
+  
+              <select id="edition">
+                <option>Unlimited</option>
+                <option>1st Edition</option>
+              </select>
+            </label>
+  
+            <label
+              id="specialPrintingField"
+              class="modal-wide-field"
+              hidden
+            >
+              Special Printing
+  
+              <select id="specialPrinting"></select>
+  
+              <small
+                id="specialPrintingStatus"
+                class="field-status"
+              ></small>
+            </label>
+  
+            <label>
+              Basis / Card
+  
+              <input
+                id="basis"
+                type="text"
+                inputmode="numeric"
+                value="0.00"
+                autocomplete="off"
+              />
+            </label>
+  
+            <label>
+              Purchased From
+  
+              <input
+                id="purchasedFrom"
+                autocomplete="off"
+                placeholder="e.g. TCGplayer, Target, eBay"
+              />
+            </label>
+  
+            <label>
+              Purchased On
+  
+              <input
+                id="purchasedOn"
+                type="date"
+              />
+            </label>
+  
+            <label>
+              Status
+  
+              <div class="status-input-row">
+                <input
+                  id="status"
+                  list="statusOptions"
+                  autocomplete="off"
+                  placeholder="Type or select status..."
+                />
+  
+                <button
+                  id="manageStatusesBtn"
+                  type="button"
+                  title="Manage statuses"
+                >
+                  ⚙
+                </button>
+              </div>
+  
+              <datalist id="statusOptions"></datalist>
+            </label>
+  
+            <label>
+              Storage Location
+  
+              <input
+                id="storage"
+                autocomplete="off"
+                placeholder="e.g. Bulk Box 1 / Row 2"
+              />
+            </label>
+  
+            <label class="modal-wide-field">
+              Notes
+  
+              <input
+                id="notes"
+                autocomplete="off"
+                placeholder="Required when Treatment = Other; Poke/Master ball reverse"
+              />
+            </label>
+  
+          </div>
+  
+          <div
+            id="sourceCardMeta"
+            class="source-meta"
+            hidden
+          ></div>
+  
+          <div
+            id="otherVariantWarning"
+            class="inline-warning"
+            hidden
+          >
+            “Other” treatment requires a note describing
+            the physical printing.
+          </div>
+  
+          <div class="modal-actions card-entry-actions">
+            <button
+              type="submit"
+              class="primary"
+            >
+              Add Card(s)
+            </button>
+  
+            <button
+              id="completeBatchBtn"
+              type="button"
+            >
+              Complete Additions from Current Set
+            </button>
+  
+            <button
+              id="clearBtn"
+              type="button"
+              hidden
+            >
+              Clear
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  
+    <template id="emptyTemplate">
     <tr><td colspan="17" class="empty">No matching cards logged yet.</td></tr>
   </template>
 
