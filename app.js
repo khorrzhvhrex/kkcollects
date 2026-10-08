@@ -2114,56 +2114,152 @@ form.addEventListener(
 );
 
 async function editCard(id) {
-  const card = cards.find(candidate => candidate.id === id);
+  const card =
+    cards.find(
+      candidate =>
+        candidate.id === id
+    );
+
   if (!card) return;
 
-  $("editId").value = card.id;
+  editingExistingCard = true;
 
-  $("setId").value = card.setId || "";
-  await selectImportedSet(card.setId || "");
+  $("editId").value =
+    card.id;
 
-  $("setName").value = card.setName || "";
-  $("cardNumber").value = card.cardNumber || "";
-  $("name").value = card.name || "";
-  $("dex").value = card.dex ?? "";
+  $("setId").value =
+    card.setId || "";
 
-  $("language").value = card.language || "English";
+  await selectImportedSet(
+    card.setId || ""
+  );
 
-  if (card.setId && card.cardNumber) {
+  $("setName").value =
+    card.setName || "";
+
+  $("cardNumber").value =
+    card.cardNumber || "";
+
+  $("name").value =
+    card.name || "";
+
+  $("dex").value =
+    card.dex ?? "";
+
+  $("language").value =
+    card.language ||
+    "English";
+
+  if (
+    card.setId &&
+    card.cardNumber
+  ) {
     await resolveCardFromNumber();
   }
 
-  $("variant").value = normalizeLegacyVariant(card.variant);
-  $("size").value = card.size || "Standard";
+  $("variant").value =
+    normalizeLegacyVariant(
+      card.variant
+    );
 
-  if (!$("editionField").hidden) {
-    $("edition").value = card.edition || "Unlimited";
+  $("size").value =
+    card.size ||
+    "Standard";
+
+  if (
+    !$("editionField").hidden
+  ) {
+    $("edition").value =
+      card.edition ||
+      "Unlimited";
   }
 
   updateDependentPrintingControls({
-    variant: normalizeLegacyVariant(card.variant),
-    size: card.size || "Standard",
-    edition: card.edition || "Unlimited",
-    specialPrintingKey: card.specialPrintingKey || ""
+    variant:
+      normalizeLegacyVariant(
+        card.variant
+      ),
+
+    size:
+      card.size ||
+      "Standard",
+
+    edition:
+      card.edition ||
+      "Unlimited",
+
+    specialPrintingKey:
+      card.specialPrintingKey ||
+      ""
   });
 
-  $("condition").value = card.condition || "NM";
-  $("quantity").value = Number(card.quantity || 0);
-  $("basis").value = Number(card.basis || 0).toFixed(2);
-  $("purchasedFrom").value = card.purchasedFrom || "";
-  $("purchasedOn").value = card.purchasedOn || "";
-  $("status").value = card.status || "Legacy Inventory";
-  $("storage").value = card.storage || "";
-  $("notes").value = card.notes || "";
+  $("condition").value =
+    card.condition ||
+    "NM";
 
-  $("otherVariantWarning").hidden = $("variant").value !== "Other";
+  $("quantity").value =
+    Number(
+      card.quantity || 0
+    );
 
-  form.querySelector('button[type="submit"]').textContent = "Save Changes";
+  $("basis").value =
+    Number(
+      card.basis || 0
+    ).toFixed(2);
 
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
+  $("purchasedFrom").value =
+    card.purchasedFrom || "";
+
+  $("purchasedOn").value =
+    card.purchasedOn || "";
+
+  $("status").value =
+    card.status || "";
+
+  $("storage").value =
+    card.storage || "";
+
+  $("notes").value =
+    card.notes || "";
+
+  $("otherVariantWarning")
+    .hidden =
+      $("variant").value !==
+      "Other";
+
+  $("cardEntryTitle")
+    .textContent =
+      "Edit Card";
+
+  $("cardEntrySetSummary")
+    .textContent =
+      card.setName || "";
+
+  $("batchDefaultsDisplay")
+    .innerHTML = "";
+
+  $("editBatchDefaultsBtn")
+    .hidden = true;
+
+  $("completeBatchBtn")
+    .hidden = true;
+
+  form
+    .querySelector(
+      'button[type="submit"]'
+    )
+    .textContent =
+      "Save Changes";
+
+  $("cardEntryModal").hidden =
+    false;
+
+  setTimeout(
+    () => {
+      $("cardNumber").focus();
+    },
+    0
+  );
 }
 
 function zeroOutCard(id) {
