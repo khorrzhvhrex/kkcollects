@@ -1161,3 +1161,9 @@ select:disabled {
     width: 100%;
   }
 }
+
+/* Keep modal-launched popovers above the modal backdrop. */
+
+.status-manager-popover {
+  z-index: 1100;
+}
